@@ -64,6 +64,8 @@ let batteryPaused = false;
 let isQuitting = false;
 let rendererRecoveryTimes = [];
 const registeredShortcuts = [];
+let primaryShortcutPressedAt = 0;
+const primaryDoublePressWindowMs = 900;
 
 const defaultConfig = {
   roamEnabled: true,
@@ -243,6 +245,21 @@ function summonAvatar() {
   writeRuntime();
 }
 
+function handlePrimarySummon() {
+  const now = Date.now();
+  if (now - primaryShortcutPressedAt <= primaryDoublePressWindowMs) {
+    primaryShortcutPressedAt = 0;
+    summonAvatar();
+    return;
+  }
+  primaryShortcutPressedAt = now;
+  lastAction = "Avatar summon armed; press Ctrl/Command+Shift+A again";
+  writeRuntime();
+  setTimeout(() => {
+    if (primaryShortcutPressedAt === now) primaryShortcutPressedAt = 0;
+  }, primaryDoublePressWindowMs);
+}
+
 function toggleAvatar() {
   if (!win || win.isDestroyed()) return;
   if (win.isVisible()) closeAvatar();
@@ -282,8 +299,12 @@ function showAvatarContextMenu() {
 }
 
 function registerAvatarShortcuts() {
-  for (const accelerator of ["CommandOrControl+Shift+A", "CommandOrControl+Shift+V"]) {
-    if (globalShortcut.register(accelerator, summonAvatar)) {
+  const shortcuts = [
+    ["CommandOrControl+Shift+A", handlePrimarySummon],
+    ["CommandOrControl+Shift+B", summonAvatar]
+  ];
+  for (const [accelerator, handler] of shortcuts) {
+    if (globalShortcut.register(accelerator, handler)) {
       registeredShortcuts.push(accelerator);
     }
   }

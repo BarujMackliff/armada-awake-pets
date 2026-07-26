@@ -14,8 +14,11 @@ const preload = fs.readFileSync(path.join(root, "preload.js"), "utf8");
 
 test("global shortcuts always summon, while right-click closes and sizes remain explicit", () => {
   assert.match(main, /CommandOrControl\+Shift\+A/);
-  assert.match(main, /CommandOrControl\+Shift\+V/);
-  assert.match(main, /globalShortcut\.register\(accelerator, summonAvatar\)/);
+  assert.match(main, /CommandOrControl\+Shift\+B/);
+  assert.doesNotMatch(main, /CommandOrControl\+Shift\+V/);
+  assert.match(main, /\["CommandOrControl\+Shift\+A", handlePrimarySummon\]/);
+  assert.match(main, /\["CommandOrControl\+Shift\+B", summonAvatar\]/);
+  assert.match(main, /primaryDoublePressWindowMs = 900/);
   assert.match(main, /repeated shortcut presses keep it visible/);
   assert.match(main, /webContents\.on\("context-menu", showAvatarContextMenu\)/);
   assert.match(main, /Close avatar/);

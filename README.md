@@ -8,11 +8,10 @@ Public home: [BarujMackliff/armada-awake-pets](https://github.com/BarujMackliff/
 
 ## Everyday controls
 
-- Windows: `Ctrl+Shift+A` summons the avatar.
-- macOS: `Command+Shift+A` summons the avatar.
-- If that shortcut is occupied, `Ctrl+Shift+V` or `Command+Shift+V` is also registered.
-- One press or repeated presses always leave the avatar visible. The global shortcuts
-  never close it.
+- Windows: double-press `Ctrl+Shift+A` to summon the avatar.
+- macOS: double-press `Command+Shift+A` to summon the avatar.
+- Fallback: `Ctrl+Shift+B` or `Command+Shift+B`—B for Baruch—summons immediately.
+- The global shortcuts never close the avatar.
 - Right-click the avatar for Small, Medium, Large, Smart relocation, Close, and Quit.
 - **Close avatar** hides the window but keeps the shortcuts armed; **Quit Awake Pet**
   exits the background process.
