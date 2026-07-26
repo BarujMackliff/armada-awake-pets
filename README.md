@@ -56,6 +56,6 @@ Every verified change can be tested, scanned for accidentally included credentia
 .\SYNC_TO_GITHUB.ps1
 ```
 
-`START_GITHUB_AUTOSYNC.cmd` installs a current-user logon task that watches only this repository. After eight quiet seconds, it runs the full tests and safety scan before committing and pushing. `node_modules`, runtime files, temporary files, credential filenames, private keys, and recognizable access-token formats are blocked or ignored.
+`START_GITHUB_AUTOSYNC.cmd` installs a persistent current-user watcher (Scheduled Task when permitted, otherwise a no-admin Startup shortcut) for only this repository. After eight quiet seconds, it runs the full tests and safety scan before committing and pushing. `node_modules`, runtime files, temporary files, credential filenames, private keys, and recognizable access-token formats are blocked or ignored.
 
 An optional Windows GitHub Actions workflow is retained locally. Publishing that workflow requires the GitHub CLI account to be granted the separate `workflow` OAuth scope; repository synchronization itself does not need that broader permission.
