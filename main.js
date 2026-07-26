@@ -47,7 +47,6 @@ let roamTimer;
 let roamStepTimer;
 let boundsWriteTimer;
 let obstructionTimer;
-let gazeTimer;
 let isExpanded = false;
 let isDragging = false;
 let isAutoMoving = false;
@@ -236,15 +235,18 @@ function closeAvatar() {
   }, 500);
 }
 
+function summonAvatar() {
+  if (!win || win.isDestroyed()) return;
+  win.showInactive();
+  win.setAlwaysOnTop(true, "floating");
+  lastAction = "Avatar summoned; repeated shortcut presses keep it visible";
+  writeRuntime();
+}
+
 function toggleAvatar() {
   if (!win || win.isDestroyed()) return;
   if (win.isVisible()) closeAvatar();
-  else {
-    win.showInactive();
-    win.setAlwaysOnTop(true, "floating");
-    lastAction = "Avatar opened from global shortcut";
-    writeRuntime();
-  }
+  else summonAvatar();
 }
 
 function showAvatarContextMenu() {
@@ -269,7 +271,6 @@ function showAvatarContextMenu() {
     { type: "separator" },
     {
       label: "Close avatar",
-      accelerator: "CommandOrControl+Shift+A",
       click: closeAvatar
     },
     {
@@ -282,7 +283,7 @@ function showAvatarContextMenu() {
 
 function registerAvatarShortcuts() {
   for (const accelerator of ["CommandOrControl+Shift+A", "CommandOrControl+Shift+V"]) {
-    if (globalShortcut.register(accelerator, toggleAvatar)) {
+    if (globalShortcut.register(accelerator, summonAvatar)) {
       registeredShortcuts.push(accelerator);
     }
   }
@@ -310,9 +311,7 @@ function recoverRenderer(createdWindow, details = {}) {
   }
   lastError = `Renderer ${receipt.reason}; recovering automatically`;
   clearInterval(obstructionTimer);
-  clearInterval(gazeTimer);
   obstructionTimer = null;
-  gazeTimer = null;
   try {
     createdWindow.destroy();
   } catch {
@@ -519,24 +518,6 @@ function applyWindowShape(expanded = isExpanded, heightOverride = null) {
   win.setShape(rectangles);
 }
 
-function updateGaze() {
-  if (!win || win.isDestroyed() || !win.isVisible()) return;
-  const cursor = screen.getCursorScreenPoint();
-  const bounds = win.getBounds();
-  const display = screen.getDisplayMatching(bounds);
-  const scale = normalizeSize(config?.size).scale;
-  const faceCenter = {
-    x: bounds.x + BASE_WIDTH * scale * 0.5,
-    y: bounds.y + BASE_HEIGHT * scale * 0.28
-  };
-  const horizontalRange = Math.max(180, display.workArea.width * 0.24);
-  const verticalRange = Math.max(140, display.workArea.height * 0.22);
-  win.webContents.send("gaze", {
-    x: Math.max(-1, Math.min(1, (cursor.x - faceCenter.x) / horizontalRange)),
-    y: Math.max(-1, Math.min(1, (cursor.y - faceCenter.y) / verticalRange))
-  });
-}
-
 function createWindow() {
   const bounds = loadBounds();
   const createdWindow = new BrowserWindow({
@@ -578,10 +559,7 @@ function createWindow() {
     refreshSessions();
     scheduleRoam();
     clearInterval(obstructionTimer);
-    clearInterval(gazeTimer);
     obstructionTimer = setInterval(obstructionGuard, 180);
-    gazeTimer = setInterval(updateGaze, 80);
-    updateGaze();
     updatePowerState();
   });
   createdWindow.on("move", () => {
@@ -621,9 +599,7 @@ function routeToSession(id) {
 function applyCommand(command) {
   if (!command || !win || win.isDestroyed()) return;
   if (command.action === "show") {
-    win.showInactive();
-    win.setAlwaysOnTop(true, "floating");
-    lastAction = "Avatar opened";
+    summonAvatar();
   } else if (command.action === "hide") {
     closeAvatar();
   } else if (command.action === "toggle") {
@@ -800,7 +776,6 @@ app.on("before-quit", () => {
   clearInterval(roamStepTimer);
   clearTimeout(boundsWriteTimer);
   clearInterval(obstructionTimer);
-  clearInterval(gazeTimer);
   powerMonitor.removeListener("on-battery", updatePowerState);
   powerMonitor.removeListener("on-ac", updatePowerState);
   globalShortcut.unregisterAll();

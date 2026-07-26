@@ -31,7 +31,6 @@ const status = document.querySelector("#mission-status");
 const count = document.querySelector("#session-count");
 const panel = document.querySelector("#session-panel");
 const avatarDrag = document.querySelector("#avatar-drag");
-const gazeEyes = document.querySelector("#gaze-eyes");
 
 let sessions = [];
 let expanded = false;
@@ -43,7 +42,6 @@ let collapseTimer;
 let motionTimer;
 let activityTimer;
 let dragLastX = 0;
-let gaze = { x: 0, y: 0 };
 let batteryPaused = false;
 
 const motionClasses = [
@@ -72,37 +70,6 @@ function setPose(name) {
     avatar.classList.remove("swap");
   }, 75);
 }
-
-function renderGaze() {
-  const anchors = character.eyeTracking?.poses?.[currentPose] || [];
-  gazeEyes.replaceChildren();
-  gazeEyes.hidden = anchors.length === 0;
-  if (!anchors.length || !avatar.complete) return;
-
-  const imageRect = avatar.getBoundingClientRect();
-  const dragRect = avatarDrag.getBoundingClientRect();
-  const facingLeft = avatarDrag.classList.contains("facing-left");
-  const maxTravel = Number(character.eyeTracking?.maxTravel) || 0;
-  const pupilSize = Number(character.eyeTracking?.pupilSize) || 0;
-
-  for (const [normalizedX, normalizedY] of anchors) {
-    const pupil = document.createElement("i");
-    pupil.className = "gaze-pupil";
-    pupil.style.width = `${pupilSize}px`;
-    pupil.style.height = `${pupilSize}px`;
-    pupil.style.left = `${
-      imageRect.left -
-      dragRect.left +
-      imageRect.width * (facingLeft ? 1 - normalizedX : normalizedX)
-    }px`;
-    pupil.style.top = `${imageRect.top - dragRect.top + imageRect.height * normalizedY}px`;
-    pupil.style.setProperty("--gaze-x", `${gaze.x * maxTravel}px`);
-    pupil.style.setProperty("--gaze-y", `${gaze.y * maxTravel * 0.62}px`);
-    gazeEyes.append(pupil);
-  }
-}
-
-avatar.addEventListener("load", () => requestAnimationFrame(renderGaze));
 
 function automaticPose() {
   if (Date.now() < forcedUntil || dragging) return;
@@ -239,11 +206,9 @@ avatarDrag.addEventListener("pointermove", (event) => {
   if (deltaX < -1) {
     avatarDrag.classList.add("facing-left");
     avatarDrag.classList.remove("facing-right");
-    renderGaze();
   } else if (deltaX > 1) {
     avatarDrag.classList.add("facing-right");
     avatarDrag.classList.remove("facing-left");
-    renderGaze();
   }
   dragLastX = event.screenX;
   window.crixus.moveDrag({ screenX: event.screenX, screenY: event.screenY });
@@ -286,17 +251,6 @@ window.crixus.onRoam(({ active }) => {
 window.crixus.onCollapse(() => setExpanded(false));
 window.crixus.onMotion(runMotion);
 window.crixus.onGhost(({ active }) => pet.classList.toggle("ghosted", Boolean(active)));
-window.crixus.onGaze((next) => {
-  gaze = {
-    x: Math.max(-1, Math.min(1, Number(next?.x) || 0)),
-    y: Math.max(-1, Math.min(1, Number(next?.y) || 0))
-  };
-  const maxTravel = Number(character.eyeTracking?.maxTravel) || 0;
-  for (const pupil of gazeEyes.children) {
-    pupil.style.setProperty("--gaze-x", `${gaze.x * maxTravel}px`);
-    pupil.style.setProperty("--gaze-y", `${gaze.y * maxTravel * 0.62}px`);
-  }
-});
 window.crixus.onPowerState(({ paused }) => {
   batteryPaused = Boolean(paused);
   pet.classList.toggle("energy-paused", batteryPaused);

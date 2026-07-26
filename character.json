@@ -4,24 +4,6 @@
   "emptyStatus": "Waiting for an Anti-Gravity session",
   "missionSingular": "mission",
   "missionPlural": "missions",
-  "eyeTracking": {
-    "maxTravel": 3.2,
-    "pupilSize": 4.4,
-    "poses": {
-      "alert": [[0.464, 0.225], [0.673, 0.221]],
-      "working": [[0.477, 0.236], [0.672, 0.236]],
-      "walking": [[0.568, 0.232], [0.747, 0.232]],
-      "thinking": [[0.539, 0.272], [0.717, 0.251]],
-      "success": [[0.534, 0.233], [0.717, 0.233]],
-      "error-log": [[0.506, 0.265], [0.671, 0.265]],
-      "checkpoint": [[0.416, 0.237], [0.632, 0.237]],
-      "waiting": [[0.337, 0.225], [0.503, 0.225]],
-      "battle-ready": [[0.527, 0.261], [0.646, 0.261]],
-      "routing": [[0.291, 0.215], [0.368, 0.215]],
-      "blocked": [[0.381, 0.298]],
-      "off-duty": []
-    }
-  },
   "assets": {
     "alert": "assets/crixus-alert.png",
     "working": "assets/crixus-working.png",

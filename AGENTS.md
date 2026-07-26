@@ -21,8 +21,8 @@ CRIXUS animates in place frequently but relocates only after a 14/34/44-minute p
 
 When the user addresses CRIXUS and names an open app as a destination, run `.\CRIXUS_AVATAR.ps1 move-to -AppName "<app>"`. `OBSIDINNA` normalizes to Obsidian and Google Chrome normalizes to Chrome. “Get out of the way,” “I need to read,” or “show me the options” means `.\CRIXUS_AVATAR.ps1 yield -Duration 30000`. Requests to jump, swing the sword, scratch his head, sit, patrol, look, shield, or sleep map to `animate -Motion <name>`.
 
-`Ctrl/Command+Shift+A` toggles the avatar globally; `Ctrl/Command+Shift+V` is the fallback. Right-click exposes Small, Medium, Large, Close, and Quit. "Close" hides the avatar while leaving global shortcuts armed. Size requests map to `size -Size small|medium|large`; the original 440x300 footprint is Large and is the maximum.
+`Ctrl/Command+Shift+A` summons the avatar globally; `Ctrl/Command+Shift+V` is the fallback. One press or repeated presses must leave it visible and must never close it. Right-click exposes Small, Medium, Large, Close, and Quit. "Close" hides the avatar while leaving global shortcuts armed. Size requests map to `size -Size small|medium|large`; the original 440x300 footprint is Large and is the maximum.
 
-The gaze system may read the current pointer position but must never synthesize, warp, click, or otherwise move the user's pointer.
+Do not add synthetic moving eyes or pupil overlays. Preserve the original character artwork. The application must never synthesize, warp, click, or otherwise move the user's pointer.
 
 After every verified change inside this repository, run `.\SYNC_TO_GITHUB.ps1`. The outside checksum-sealed publisher must approve the working tree, staged snapshot, full history, exact remote, and fast-forward update. Never bypass the seal, publish a workflow, or force-push.

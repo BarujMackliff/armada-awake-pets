@@ -8,16 +8,19 @@ Public home: [BarujMackliff/armada-awake-pets](https://github.com/BarujMackliff/
 
 ## Everyday controls
 
-- Windows: `Ctrl+Shift+A` toggles the avatar.
-- macOS: `Command+Shift+A` toggles the avatar.
+- Windows: `Ctrl+Shift+A` summons the avatar.
+- macOS: `Command+Shift+A` summons the avatar.
 - If that shortcut is occupied, `Ctrl+Shift+V` or `Command+Shift+V` is also registered.
+- One press or repeated presses always leave the avatar visible. The global shortcuts
+  never close it.
 - Right-click the avatar for Small, Medium, Large, Smart relocation, Close, and Quit.
 - **Close avatar** hides the window but keeps the shortcuts armed; **Quit Awake Pet**
   exits the background process.
 - Large is the original and maximum 440 by 300 size. Medium is 370 by 252. Small is
   299 by 204.
-- The pupils vividly follow the real mouse direction. The application only reads
-  the pointer position; it has no pointer-warping capability and never moves the mouse.
+- The original character artwork, including its eyes, is displayed unchanged. There
+  is no synthetic pupil overlay. The application has no pointer-warping capability
+  and never moves the mouse.
 
 ## Commands
 
@@ -64,8 +67,7 @@ The two `.cmd` launchers provide one-click enable and disable.
 ## Reusable character packs
 
 Fork the repository, edit `character.json`, and replace the twelve transparent image
-paths in its `assets` map. The engine validates every required state and its gaze
-anchors at startup.
+paths in its `assets` map. The engine validates every required state at startup.
 
 The states are `alert`, `working`, `walking`, `thinking`, `success`, `error-log`,
 `checkpoint`, `waiting`, `battle-ready`, `routing`, `blocked`, and `off-duty`.

@@ -45,37 +45,6 @@ button {
   cursor: grab;
 }
 
-.gaze-eyes {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  animation: crixus-breathe 3.4s ease-in-out infinite;
-}
-
-.gaze-pupil {
-  --gaze-x: 0px;
-  --gaze-y: 0px;
-  position: absolute;
-  width: 4.4px;
-  height: 4.4px;
-  border-radius: 50%;
-  background: #140d09;
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.85),
-    0 0 0 0.7px rgba(30, 13, 6, 0.84),
-    0 0 4px rgba(244, 184, 91, 0.85);
-  transform: translate(
-    calc(-50% + var(--gaze-x)),
-    calc(-50% + var(--gaze-y))
-  );
-  transition: transform 75ms linear, opacity 100ms ease;
-}
-
-.gaze-eyes[hidden] {
-  display: none;
-}
-
 .avatar-drag.dragging {
   cursor: grabbing;
 }
@@ -110,10 +79,6 @@ button {
   animation: crixus-walk-bob 360ms ease-in-out infinite alternate;
 }
 
-.pet.roaming .gaze-eyes {
-  animation: crixus-walk-bob 360ms ease-in-out infinite alternate;
-}
-
 .pet.ghosted {
   filter: saturate(0.55);
 }
@@ -129,16 +94,7 @@ button {
   animation: crixus-jump 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 2;
 }
 
-.pet.motion-jump .gaze-eyes {
-  animation: crixus-jump 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 2;
-}
-
 .pet.motion-sword .avatar-drag img {
-  animation: crixus-sword 650ms ease-in-out 3;
-  transform-origin: 50% 92%;
-}
-
-.pet.motion-sword .gaze-eyes {
   animation: crixus-sword 650ms ease-in-out 3;
   transform-origin: 50% 92%;
 }
@@ -147,17 +103,8 @@ button {
   animation: crixus-scratch 720ms ease-in-out 4;
 }
 
-.pet.motion-scratch .gaze-eyes {
-  animation: crixus-scratch 720ms ease-in-out 4;
-}
-
 .pet.motion-sit .avatar-drag img,
 .pet.motion-sleep .avatar-drag img {
-  animation: crixus-sit 1.8s ease-in-out infinite;
-}
-
-.pet.motion-sit .gaze-eyes,
-.pet.motion-sleep .gaze-eyes {
   animation: crixus-sit 1.8s ease-in-out infinite;
 }
 
@@ -173,17 +120,10 @@ button {
   animation: crixus-look 800ms ease-in-out 3;
 }
 
-.pet.motion-look .gaze-eyes {
-  animation: crixus-look 800ms ease-in-out 3;
-}
-
 .pet.motion-shield .avatar-drag img {
   animation: crixus-shield 320ms ease-in-out 5;
 }
 
-.pet.motion-shield .gaze-eyes {
-  animation: crixus-shield 320ms ease-in-out 5;
-}
 @keyframes crixus-breathe {
   0%,
   100% {
