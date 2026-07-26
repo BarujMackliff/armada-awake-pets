@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; object-src 'none'; frame-src 'none'; media-src 'none'; base-uri 'none'; form-action 'none'"
+    />
     <title>CRIXUS Awake Pet</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -11,6 +15,7 @@
       <button id="chevron" class="chevron no-drag hit-region" aria-label="Show or hide active sessions">⌃</button>
       <div id="avatar-drag" class="avatar-drag hit-region" title="Drag CRIXUS across any monitor">
         <img id="avatar" src="../assets/crixus-alert.png" alt="CRIXUS desktop companion" draggable="false" />
+        <div id="gaze-eyes" class="gaze-eyes" aria-hidden="true"></div>
       </div>
       <button id="mission-card" class="mission-card no-drag hit-region" type="button">
         <span class="mission-copy">

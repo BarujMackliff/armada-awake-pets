@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+repo_root="$(git rev-parse --show-toplevel)"
+sealed_gate="${LOCALAPPDATA}/PRBE/AwakePetPublisher/prepublish-check.js"
+if [ ! -f "$sealed_gate" ]; then
+  echo "Push blocked: the sealed publication gate is missing." >&2
+  exit 1
+fi
+node "$sealed_gate" --root "$repo_root" --staged --history

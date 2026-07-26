@@ -21,4 +21,8 @@ CRIXUS animates in place frequently but relocates only after a 14/34/44-minute p
 
 When the user addresses CRIXUS and names an open app as a destination, run `.\CRIXUS_AVATAR.ps1 move-to -AppName "<app>"`. `OBSIDINNA` normalizes to Obsidian and Google Chrome normalizes to Chrome. “Get out of the way,” “I need to read,” or “show me the options” maps to `yield -Duration 30000`. Jump/sword/scratch/sit/patrol/look/shield/sleep requests map to `animate -Motion <name>`.
 
-After every verified repository change, run `.\SYNC_TO_GITHUB.ps1`. Do not bypass its tests or publication safety scan and never force-push.
+`Ctrl/Command+Shift+A` toggles the avatar globally and `Ctrl/Command+Shift+V` is the fallback. Right-click provides Small, Medium, Large, Close, and Quit. Close leaves the shortcuts running. Size requests map to `size -Size small|medium|large`; 440x300 is Large and is the maximum.
+
+The gaze system may read the current pointer position but must never synthesize, warp, click, or otherwise move the user's pointer.
+
+After every verified repository change, run `.\SYNC_TO_GITHUB.ps1`. Do not bypass the outside checksum seal, the staged/full-history scan, or the fast-forward-only rule. Never publish a remote workflow and never force-push.

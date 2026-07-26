@@ -15,7 +15,8 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test",
-    "prepublish:check": "node scripts/prepublish-check.js"
+    "prepublish:check": "node scripts/prepublish-check.js --history",
+    "security:install": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\INSTALL_SECURITY_GATES.ps1"
   },
   "devDependencies": {
     "electron": "39.2.3"

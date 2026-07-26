@@ -17,5 +17,7 @@ contextBridge.exposeInMainWorld("crixus", {
   onCollapse: (callback) => ipcRenderer.on("collapse-panel", () => callback()),
   onMotion: (callback) => ipcRenderer.on("run-motion", (_event, motion) => callback(motion)),
   onGhost: (callback) => ipcRenderer.on("ghost-state", (_event, state) => callback(state)),
+  onGaze: (callback) => ipcRenderer.on("gaze", (_event, state) => callback(state)),
+  onPowerState: (callback) => ipcRenderer.on("power-state", (_event, state) => callback(state)),
   onScannerError: (callback) => ipcRenderer.on("scanner-error", (_event, message) => callback(message))
 });

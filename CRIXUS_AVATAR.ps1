@@ -1,5 +1,5 @@
 param(
-  [ValidateSet("enable", "disable", "toggle", "quit", "status", "refresh", "pose", "route", "roam", "move-to", "animate", "yield")]
+  [ValidateSet("enable", "disable", "toggle", "quit", "status", "refresh", "pose", "route", "roam", "move-to", "animate", "yield", "size")]
   [string]$Action = "enable",
   [ValidateSet("alert", "working", "walking", "thinking", "success", "error-log", "checkpoint", "waiting", "battle-ready", "routing", "blocked", "off-duty")]
   [string]$Pose = "alert",
@@ -9,6 +9,8 @@ param(
   [string]$Motion = "random",
   [ValidateSet("on", "off")]
   [string]$Mode = "on",
+  [ValidateSet("small", "medium", "large")]
+  [string]$Size = "large",
   [int]$Duration = 5000
 )
 
@@ -59,6 +61,8 @@ if ($Action -eq "status") {
       systemIdleSeconds = [int]$runtime.systemIdleSeconds
       ghosted = [bool]$runtime.ghosted
       pointerRegion = $runtime.pointerRegion
+      size = $runtime.size
+      shortcuts = $runtime.shortcuts
       lastAction = $runtime.lastAction
       lastError = $runtime.lastError
       updatedAt = $runtime.updatedAt
@@ -112,6 +116,10 @@ switch ($Action) {
   "animate" {
     Send-CrixusCommand "animate" @{ motion = $Motion; duration = [Math]::Max(900, [Math]::Min($Duration, 15000)) }
     "CRIXUS animation: $Motion"
+  }
+  "size" {
+    Send-CrixusCommand "size" @{ size = $Size }
+    "CRIXUS avatar size: $Size"
   }
   "yield" {
     Send-CrixusCommand "yield" @{ duration = [Math]::Max(5000, [Math]::Min($Duration, 600000)) }

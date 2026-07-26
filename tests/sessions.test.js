@@ -4,6 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   parseClaudeProcesses,
+  parsePosixClaudeProcesses,
   parseTranscript,
   statusFromAge
 } = require("../lib/sessions");
@@ -16,6 +17,18 @@ test("extracts resumed Claude session ids and ignores unresumed processes", () =
   assert.deepEqual(parseClaudeProcesses(raw), [{
     id: "501f6796-7dbe-468d-8f87-60ec477673ac",
     pid: 10,
+    createdAt: null
+  }]);
+});
+
+test("extracts resumed Claude sessions from macOS and Linux process listings", () => {
+  const parsed = parsePosixClaudeProcesses(
+    " 4812 claude --resume=501f6796-7dbe-468d-8f87-60ec477673ac\n" +
+    " 4813 node unrelated.js\n"
+  );
+  assert.deepEqual(parsed, [{
+    id: "501f6796-7dbe-468d-8f87-60ec477673ac",
+    pid: 4812,
     createdAt: null
   }]);
 });

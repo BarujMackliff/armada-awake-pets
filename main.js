@@ -2,12 +2,29 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { app, BrowserWindow, ipcMain, powerMonitor, screen, shell } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  globalShortcut,
+  ipcMain,
+  Menu,
+  powerMonitor,
+  screen,
+  session: electronSession,
+  shell
+} = require("electron");
 const { discoverSessions } = require("./lib/sessions");
 const { clampBounds, chooseSafeEdgeTarget } = require("./lib/geometry");
 const { buildSessionRoute } = require("./lib/routes");
 const { loadCharacter } = require("./lib/character");
 const { queryWindow } = require("./lib/windows");
+const {
+  BASE_HEIGHT,
+  BASE_WIDTH,
+  dimensionsForSize,
+  normalizeSize,
+  scalePixels
+} = require("./lib/sizes");
 
 const localData = process.env.LOCALAPPDATA || app.getPath("userData");
 const runtimeDir = path.join(localData, "PRBE", "CrixusAwakePet");
@@ -17,6 +34,7 @@ const runtimePath = path.join(runtimeDir, "runtime.json");
 const commandPath = path.join(runtimeDir, "command.json");
 const boundsPath = path.join(runtimeDir, "bounds.json");
 const configPath = path.join(runtimeDir, "config.json");
+const diagnosticPath = path.join(runtimeDir, "renderer-diagnostic.json");
 
 let win;
 let sessions = [];
@@ -29,6 +47,7 @@ let roamTimer;
 let roamStepTimer;
 let boundsWriteTimer;
 let obstructionTimer;
+let gazeTimer;
 let isExpanded = false;
 let isDragging = false;
 let isAutoMoving = false;
@@ -42,12 +61,17 @@ let lastAction = "Started";
 let lastError = "";
 let config;
 let character;
+let batteryPaused = false;
+let isQuitting = false;
+let rendererRecoveryTimes = [];
+const registeredShortcuts = [];
 
 const defaultConfig = {
   roamEnabled: true,
   minimumIdleSeconds: 60,
   pinChoicesMinutes: [14, 34, 44],
-  nextRelocationAt: 0
+  nextRelocationAt: 0,
+  size: "large"
 };
 
 function ensureRuntimeDir() {
@@ -78,19 +102,21 @@ function displaySnapshot() {
 
 function defaultBounds() {
   const primary = screen.getPrimaryDisplay().workArea;
+  const dimensions = dimensionsForSize(config?.size);
   return {
-    width: 440,
-    height: 300,
-    x: primary.x + primary.width - 470,
-    y: primary.y + primary.height - 330
+    width: dimensions.width,
+    height: dimensions.height,
+    x: primary.x + primary.width - dimensions.width - 30,
+    y: primary.y + primary.height - dimensions.height - 30
   };
 }
 
 function loadBounds() {
   const saved = readJson(boundsPath, defaultBounds());
+  const dimensions = dimensionsForSize(config?.size);
   const desired = {
-    width: 440,
-    height: 300,
+    width: dimensions.width,
+    height: dimensions.height,
     x: Number(saved.x),
     y: Number(saved.y)
   };
@@ -109,11 +135,20 @@ function loadConfig() {
     ? loaded.pinChoicesMinutes.filter((value) => [14, 34, 44].includes(Number(value)))
     : [...defaultConfig.pinChoicesMinutes];
   if (!loaded.pinChoicesMinutes.length) loaded.pinChoicesMinutes = [...defaultConfig.pinChoicesMinutes];
+  loaded.size = normalizeSize(loaded.size).name;
   return loaded;
 }
 
 function saveConfig() {
   writeJson(configPath, config);
+}
+
+function expandedBaseHeight(expanded = isExpanded) {
+  return expanded ? Math.min(690, 315 + sessions.length * 68) : BASE_HEIGHT;
+}
+
+function currentDimensions(expanded = isExpanded) {
+  return dimensionsForSize(config?.size, expandedBaseHeight(expanded));
 }
 
 function writeRuntime() {
@@ -143,10 +178,150 @@ function writeRuntime() {
     ghosted,
     pointerRegion,
     pointerInteractive,
+    size: normalizeSize(config?.size).name,
+    shortcuts: [...registeredShortcuts],
+    batteryPaused,
     lastAction,
     lastError,
     updatedAt: new Date().toISOString()
   });
+}
+
+function updatePowerState() {
+  batteryPaused = powerMonitor.isOnBatteryPower();
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("power-state", { paused: batteryPaused });
+    lastAction = batteryPaused
+      ? "In-place animation paused while on battery power"
+      : "Full in-place animation restored on AC power";
+    writeRuntime();
+  }
+}
+
+function setAvatarSize(name) {
+  if (!win || win.isDestroyed()) return;
+  const preset = normalizeSize(name);
+  const current = win.getBounds();
+  const dimensions = dimensionsForSize(preset.name, expandedBaseHeight());
+  config.size = preset.name;
+  saveConfig();
+  win.webContents.setZoomFactor(preset.scale);
+  const resized = clampBounds(
+    {
+      x: Math.round(current.x + (current.width - dimensions.width) / 2),
+      y: Math.round(current.y + (current.height - dimensions.height) / 2),
+      width: dimensions.width,
+      height: dimensions.height
+    },
+    displaySnapshot()
+  );
+  suppressMoveEventsUntil = Date.now() + 600;
+  win.setBounds(resized, true);
+  applyWindowShape(isExpanded, dimensions.height - scalePixels(246, preset.name));
+  lastAction = `Avatar size: ${preset.name}`;
+  saveBounds();
+  writeRuntime();
+}
+
+function closeAvatar() {
+  if (!win || win.isDestroyed()) return;
+  isExpanded = false;
+  win.webContents.send("collapse-panel");
+  win.webContents.send("force-pose", { name: "off-duty", duration: 700 });
+  lastAction = "Avatar closed; global shortcut remains armed";
+  setTimeout(() => {
+    if (!win || win.isDestroyed()) return;
+    win.hide();
+    writeRuntime();
+  }, 500);
+}
+
+function toggleAvatar() {
+  if (!win || win.isDestroyed()) return;
+  if (win.isVisible()) closeAvatar();
+  else {
+    win.showInactive();
+    win.setAlwaysOnTop(true, "floating");
+    lastAction = "Avatar opened from global shortcut";
+    writeRuntime();
+  }
+}
+
+function showAvatarContextMenu() {
+  if (!win || win.isDestroyed()) return;
+  const activeSize = normalizeSize(config.size).name;
+  const menu = Menu.buildFromTemplate([
+    {
+      label: "Avatar size",
+      submenu: ["small", "medium", "large"].map((name) => ({
+        label: name[0].toUpperCase() + name.slice(1),
+        type: "radio",
+        checked: activeSize === name,
+        click: () => setAvatarSize(name)
+      }))
+    },
+    {
+      label: "Smart relocation",
+      type: "checkbox",
+      checked: Boolean(config.roamEnabled),
+      click: ({ checked }) => applyCommand({ action: "roam", enabled: checked })
+    },
+    { type: "separator" },
+    {
+      label: "Close avatar",
+      accelerator: "CommandOrControl+Shift+A",
+      click: closeAvatar
+    },
+    {
+      label: "Quit Awake Pet",
+      click: () => app.quit()
+    }
+  ]);
+  menu.popup({ window: win });
+}
+
+function registerAvatarShortcuts() {
+  for (const accelerator of ["CommandOrControl+Shift+A", "CommandOrControl+Shift+V"]) {
+    if (globalShortcut.register(accelerator, toggleAvatar)) {
+      registeredShortcuts.push(accelerator);
+    }
+  }
+  if (!registeredShortcuts.length) {
+    lastError = "Global avatar shortcuts are occupied by another application";
+  }
+}
+
+function recoverRenderer(createdWindow, details = {}) {
+  if (isQuitting || win !== createdWindow) return;
+  const now = Date.now();
+  rendererRecoveryTimes = rendererRecoveryTimes.filter((stamp) => now - stamp < 60_000);
+  rendererRecoveryTimes.push(now);
+  const receipt = {
+    occurredAt: new Date(now).toISOString(),
+    reason: String(details.reason || "unknown"),
+    exitCode: Number(details.exitCode || 0),
+    recoveryAttempt: rendererRecoveryTimes.length
+  };
+  writeJson(diagnosticPath, receipt);
+  if (rendererRecoveryTimes.length > 3) {
+    lastError = "Renderer recovery stopped after three crashes in one minute";
+    writeRuntime();
+    return;
+  }
+  lastError = `Renderer ${receipt.reason}; recovering automatically`;
+  clearInterval(obstructionTimer);
+  clearInterval(gazeTimer);
+  obstructionTimer = null;
+  gazeTimer = null;
+  try {
+    createdWindow.destroy();
+  } catch {
+    // A crashed renderer may already have torn down its native window.
+  }
+  if (win === createdWindow) win = null;
+  setTimeout(() => {
+    if (!isQuitting && !win) createWindow();
+  }, 750);
 }
 
 function nextPinDurationMs() {
@@ -225,7 +400,7 @@ function animateWindowTo(target, duration = 1800) {
 }
 
 async function safeTargetForWindow(windowInfo) {
-  const start = { ...win.getBounds(), width: 440, height: 300 };
+  const start = win.getBounds();
   const activeRect = {
     x: Number(windowInfo.x),
     y: Number(windowInfo.y),
@@ -298,11 +473,12 @@ function obstructionGuard() {
   }
   const cursor = screen.getCursorScreenPoint();
   const bounds = win.getBounds();
+  const scale = normalizeSize(config?.size).scale;
   const relativeX = cursor.x - bounds.x;
   const relativeY = cursor.y - bounds.y;
   const insideAvatar =
-    relativeX >= 95 && relativeX < 345 &&
-    relativeY >= 0 && relativeY < 195;
+    relativeX >= 95 * scale && relativeX < 345 * scale &&
+    relativeY >= 0 && relativeY < 195 * scale;
   if (insideAvatar && pointerRegion === "avatar" && powerMonitor.getSystemIdleTime() < 3) {
     if (!pointerInsideSince) pointerInsideSince = Date.now();
     if (Date.now() - pointerInsideSince > 1200) setGhosted(true);
@@ -314,24 +490,56 @@ function obstructionGuard() {
 
 function applyWindowShape(expanded = isExpanded, heightOverride = null) {
   if (!win || win.isDestroyed() || typeof win.setShape !== "function") return;
+  const size = normalizeSize(config?.size).name;
   const rectangles = [
-    { x: 95, y: 0, width: 250, height: 195 },
-    { x: 15, y: 164, width: 410, height: 90 }
+    {
+      x: scalePixels(95, size),
+      y: 0,
+      width: scalePixels(250, size),
+      height: scalePixels(195, size)
+    },
+    {
+      x: scalePixels(15, size),
+      y: scalePixels(164, size),
+      width: scalePixels(410, size),
+      height: scalePixels(90, size)
+    }
   ];
   if (expanded) {
     rectangles.push({
-      x: 15,
-      y: 246,
-      width: 410,
-      height: Math.max(80, Number(heightOverride) || win.getBounds().height - 246)
+      x: scalePixels(15, size),
+      y: scalePixels(246, size),
+      width: scalePixels(410, size),
+      height: Math.max(
+        scalePixels(80, size),
+        Number(heightOverride) || win.getBounds().height - scalePixels(246, size)
+      )
     });
   }
   win.setShape(rectangles);
 }
 
+function updateGaze() {
+  if (!win || win.isDestroyed() || !win.isVisible()) return;
+  const cursor = screen.getCursorScreenPoint();
+  const bounds = win.getBounds();
+  const display = screen.getDisplayMatching(bounds);
+  const scale = normalizeSize(config?.size).scale;
+  const faceCenter = {
+    x: bounds.x + BASE_WIDTH * scale * 0.5,
+    y: bounds.y + BASE_HEIGHT * scale * 0.28
+  };
+  const horizontalRange = Math.max(180, display.workArea.width * 0.24);
+  const verticalRange = Math.max(140, display.workArea.height * 0.22);
+  win.webContents.send("gaze", {
+    x: Math.max(-1, Math.min(1, (cursor.x - faceCenter.x) / horizontalRange)),
+    y: Math.max(-1, Math.min(1, (cursor.y - faceCenter.y) / verticalRange))
+  });
+}
+
 function createWindow() {
   const bounds = loadBounds();
-  win = new BrowserWindow({
+  const createdWindow = new BrowserWindow({
     ...bounds,
     transparent: true,
     frame: false,
@@ -344,27 +552,44 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true
     }
   });
-  win.setAlwaysOnTop(true, "floating");
-  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  win.loadFile(path.join(__dirname, "renderer", "index.html"));
-  win.once("ready-to-show", () => {
-    win.setIgnoreMouseEvents(false);
+  win = createdWindow;
+  createdWindow.webContents.setZoomFactor(normalizeSize(config.size).scale);
+  createdWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  createdWindow.webContents.on("will-navigate", (event) => event.preventDefault());
+  createdWindow.webContents.on("will-attach-webview", (event) => event.preventDefault());
+  createdWindow.webContents.on("context-menu", showAvatarContextMenu);
+  createdWindow.webContents.on("render-process-gone", (_event, details) => {
+    recoverRenderer(createdWindow, details);
+  });
+  createdWindow.setAlwaysOnTop(true, "floating");
+  createdWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  createdWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
+  createdWindow.once("ready-to-show", () => {
+    if (win !== createdWindow) return;
+    createdWindow.setIgnoreMouseEvents(false);
     applyWindowShape(false);
-    win.showInactive();
+    createdWindow.showInactive();
     writeRuntime();
     refreshSessions();
     scheduleRoam();
+    clearInterval(obstructionTimer);
+    clearInterval(gazeTimer);
     obstructionTimer = setInterval(obstructionGuard, 180);
+    gazeTimer = setInterval(updateGaze, 80);
+    updateGaze();
+    updatePowerState();
   });
-  win.on("move", () => {
+  createdWindow.on("move", () => {
     clearTimeout(boundsWriteTimer);
     boundsWriteTimer = setTimeout(saveBounds, 240);
   });
-  win.on("closed", () => {
-    win = null;
+  createdWindow.on("closed", () => {
+    if (win === createdWindow) win = null;
   });
 }
 
@@ -398,12 +623,11 @@ function applyCommand(command) {
   if (command.action === "show") {
     win.showInactive();
     win.setAlwaysOnTop(true, "floating");
+    lastAction = "Avatar opened";
   } else if (command.action === "hide") {
-    win.webContents.send("force-pose", { name: "off-duty", duration: 900 });
-    setTimeout(() => win && !win.isDestroyed() && win.hide(), 700);
+    closeAvatar();
   } else if (command.action === "toggle") {
-    if (win.isVisible()) win.hide();
-    else win.showInactive();
+    toggleAvatar();
   } else if (command.action === "quit") {
     app.quit();
   } else if (command.action === "pose") {
@@ -426,6 +650,8 @@ function applyCommand(command) {
     routeToSession(command.sessionId);
   } else if (command.action === "move-to") {
     moveToNamedApp(command.appName);
+  } else if (command.action === "size") {
+    setAvatarSize(command.size);
   } else if (command.action === "animate") {
     lastAction = `In-place motion: ${command.motion || "random"}`;
     win.webContents.send("run-motion", {
@@ -449,7 +675,11 @@ function applyCommand(command) {
       isExpanded = false;
       win.webContents.send("collapse-panel");
       const current = win.getBounds();
-      win.setBounds(clampBounds({ ...current, height: 300 }, displaySnapshot()), true);
+      const dimensions = dimensionsForSize(config.size);
+      win.setBounds(
+        clampBounds({ ...current, width: dimensions.width, height: dimensions.height }, displaySnapshot()),
+        true
+      );
       config.nextRelocationAt = Date.now() + nextPinDurationMs();
       lastAction = "Smart relocation enabled; position pinned until the next long cooldown";
       saveConfig();
@@ -490,10 +720,13 @@ ipcMain.on("window:expanded", (_event, expanded) => {
   if (!win || win.isDestroyed()) return;
   isExpanded = Boolean(expanded);
   const current = win.getBounds();
-  const desiredHeight = expanded ? Math.min(690, 315 + sessions.length * 68) : 300;
-  const next = clampBounds({ ...current, height: desiredHeight }, displaySnapshot());
+  const dimensions = currentDimensions(isExpanded);
+  const next = clampBounds(
+    { ...current, width: dimensions.width, height: dimensions.height },
+    displaySnapshot()
+  );
   win.setBounds(next, true);
-  applyWindowShape(isExpanded, desiredHeight - 246);
+  applyWindowShape(isExpanded, dimensions.height - scalePixels(246, config.size));
 });
 ipcMain.on("drag:start", (_event, point) => {
   if (!win || win.isDestroyed()) return;
@@ -545,13 +778,21 @@ if (!gotLock) {
     config = loadConfig();
     character = loadCharacter(__dirname);
     lastCommandNonce = readJson(commandPath)?.nonce || "";
+    electronSession.defaultSession.webRequest.onBeforeRequest(
+      { urls: ["http://*/*", "https://*/*", "ws://*/*", "wss://*/*"] },
+      (_details, callback) => callback({ cancel: true })
+    );
     createWindow();
+    registerAvatarShortcuts();
+    powerMonitor.on("on-battery", updatePowerState);
+    powerMonitor.on("on-ac", updatePowerState);
     sessionTimer = setInterval(refreshSessions, 3000);
     commandTimer = setInterval(pollCommands, 350);
   });
 }
 
 app.on("before-quit", () => {
+  isQuitting = true;
   clearInterval(sessionTimer);
   clearInterval(commandTimer);
   clearTimeout(forcedPoseTimer);
@@ -559,6 +800,10 @@ app.on("before-quit", () => {
   clearInterval(roamStepTimer);
   clearTimeout(boundsWriteTimer);
   clearInterval(obstructionTimer);
+  clearInterval(gazeTimer);
+  powerMonitor.removeListener("on-battery", updatePowerState);
+  powerMonitor.removeListener("on-ac", updatePowerState);
+  globalShortcut.unregisterAll();
   try {
     fs.unlinkSync(runtimePath);
   } catch {

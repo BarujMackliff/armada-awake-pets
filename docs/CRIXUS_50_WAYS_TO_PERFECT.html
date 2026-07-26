@@ -20,6 +20,8 @@
     .verified { color: #78b9ff; font-weight: 700; }
     .next { color: #e2b96f; font-weight: 700; }
     .law { margin-top: 28px; padding: 18px 20px; border-left: 4px solid #8f2f38; background: #1b1e25; line-height: 1.55; }
+    .addendum { margin-top: 28px; padding: 20px; border: 1px solid #493f35; border-radius: 18px; background: #181b22; line-height: 1.6; }
+    .addendum h2 { margin-top: 0; color: #d7b17a; }
     code { color: #f0c98f; }
   </style>
 </head>
@@ -29,7 +31,7 @@
   <p class="lead">A behavioral audit focused on usefulness, obstruction avoidance, meaningful animation, exact session routing, reliability, and safe public distribution. “Implemented” means code exists; “Verified” means the live rig produced evidence.</p>
   <div class="summary">
     <span class="pill">Version 0.2.0</span>
-    <span class="pill">11 automated tests</span>
+    <span class="pill">22 automated tests</span>
     <span class="pill">Six-display rig</span>
     <span class="pill">Public GitHub mirror</span>
   </div>
@@ -76,18 +78,31 @@
       <tr><td>38</td><td>Clamp manual drops to a real monitor work area.</td><td class="verified">Verified</td><td>Six-display geometry tests.</td></tr>
       <tr><td>39</td><td>Keep the pet above applications without stealing focus.</td><td class="verified">Verified</td><td>Always-on-top + <code>showInactive</code>.</td></tr>
       <tr><td>40</td><td>Let users disable relocation while keeping personality.</td><td class="done">Implemented</td><td><code>roam off</code> leaves animations active.</td></tr>
-      <tr><td>41</td><td>Add reduced-motion accessibility.</td><td class="next">Next</td><td>Honor Windows animation preference.</td></tr>
+      <tr><td>41</td><td>Add reduced-motion accessibility.</td><td class="done">Implemented</td><td>Honors the operating-system reduced-motion preference.</td></tr>
       <tr><td>42</td><td>Remember a preferred anchor per application.</td><td class="next">Next</td><td>Per-app edge map.</td></tr>
       <tr><td>43</td><td>Support multiple pets without collisions.</td><td class="next">Next</td><td>Shared occupancy grid.</td></tr>
-      <tr><td>44</td><td>Pause animation on battery saver.</td><td class="next">Next</td><td>Electron power monitor.</td></tr>
+      <tr><td>44</td><td>Pause animation on battery power.</td><td class="done">Implemented</td><td>Electron power monitor pauses in-place animation until AC returns.</td></tr>
       <tr><td>45</td><td>Prioritize urgent/blocked sessions visually.</td><td class="next">Next</td><td>Session state ranking.</td></tr>
       <tr><td>46</td><td>Add a tray menu for stay-put, summon, and sleep.</td><td class="next">Next</td><td>Windows tray controls.</td></tr>
-      <tr><td>47</td><td>Add a keyboard summon shortcut.</td><td class="next">Next</td><td>Configurable global shortcut.</td></tr>
+      <tr><td>47</td><td>Add keyboard summon shortcuts.</td><td class="verified">Verified</td><td>Ctrl/Command+Shift+A plus Ctrl/Command+Shift+V fallback.</td></tr>
       <tr><td>48</td><td>Provide a no-code character-pack wizard.</td><td class="next">Next</td><td>Validate images and write <code>character.json</code>.</td></tr>
       <tr><td>49</td><td>Provide a signed one-click installer for GitHub users.</td><td class="next">Next</td><td>Release packaging and signing.</td></tr>
-      <tr><td>50</td><td>Recover gracefully after a renderer crash.</td><td class="next">Next</td><td>Crash restart + local diagnostic receipt.</td></tr>
+      <tr><td>50</td><td>Recover gracefully after a renderer crash.</td><td class="done">Implemented</td><td>Bounded restart plus local diagnostic receipt.</td></tr>
     </tbody>
   </table>
+  <section class="addendum">
+    <h2>Final polish addendum</h2>
+    <p><strong>Direct control:</strong> right-click now provides Small, Medium, Large,
+    Close, and Quit. Large preserves the original 440 by 300 maximum footprint; Close
+    hides the avatar while global shortcuts stay armed.</p>
+    <p><strong>Living gaze:</strong> pose-specific pupils follow the real pointer
+    direction vividly. The engine has no pointer-warping capability and never moves
+    the user's mouse.</p>
+    <p><strong>Public safety:</strong> publication is fail-closed behind an external
+    checksum seal, allowlisted project files, working/staged/full-history scans,
+    local commit and push hooks, exact-remote verification, and fast-forward-only
+    synchronization.</p>
+  </section>
   <div class="law"><strong>Behavior law:</strong> CRIXUS may look alive often. He may move the window rarely. User placement, typing, reading, menus, and mission selection always outrank autonomous behavior.</div>
 </main>
 </body>
