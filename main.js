@@ -284,7 +284,7 @@ function setGhosted(next) {
   ghosted = next;
   win.setOpacity(next ? 0.16 : 1);
   win.webContents.send("ghost-state", { active: next });
-  win.setIgnoreMouseEvents(next || !pointerInteractive, { forward: true });
+  win.setIgnoreMouseEvents(next, { forward: true });
 }
 
 function obstructionGuard() {
@@ -295,16 +295,35 @@ function obstructionGuard() {
   }
   const cursor = screen.getCursorScreenPoint();
   const bounds = win.getBounds();
-  const inside =
-    cursor.x >= bounds.x && cursor.x < bounds.x + bounds.width &&
-    cursor.y >= bounds.y && cursor.y < bounds.y + bounds.height;
-  if (inside && pointerRegion === "avatar" && powerMonitor.getSystemIdleTime() < 3) {
+  const relativeX = cursor.x - bounds.x;
+  const relativeY = cursor.y - bounds.y;
+  const insideAvatar =
+    relativeX >= 95 && relativeX < 345 &&
+    relativeY >= 0 && relativeY < 195;
+  if (insideAvatar && pointerRegion === "avatar" && powerMonitor.getSystemIdleTime() < 3) {
     if (!pointerInsideSince) pointerInsideSince = Date.now();
     if (Date.now() - pointerInsideSince > 1200) setGhosted(true);
   } else {
     pointerInsideSince = 0;
     setGhosted(false);
   }
+}
+
+function applyWindowShape(expanded = isExpanded) {
+  if (!win || win.isDestroyed() || typeof win.setShape !== "function") return;
+  const rectangles = [
+    { x: 95, y: 0, width: 250, height: 195 },
+    { x: 15, y: 164, width: 410, height: 90 }
+  ];
+  if (expanded) {
+    rectangles.push({
+      x: 15,
+      y: 246,
+      width: 410,
+      height: Math.max(80, win.getBounds().height - 246)
+    });
+  }
+  win.setShape(rectangles);
 }
 
 function createWindow() {
@@ -329,6 +348,8 @@ function createWindow() {
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.loadFile(path.join(__dirname, "renderer", "index.html"));
   win.once("ready-to-show", () => {
+    win.setIgnoreMouseEvents(false);
+    applyWindowShape(false);
     win.showInactive();
     writeRuntime();
     refreshSessions();
@@ -455,9 +476,6 @@ ipcMain.handle("session:open", (_event, id) => routeToSession(id));
 ipcMain.on("window:interactive", (_event, detail) => {
   pointerInteractive = typeof detail === "object" ? Boolean(detail.interactive) : Boolean(detail);
   pointerRegion = typeof detail === "object" ? String(detail.region || "none") : "unknown";
-  if (win && !win.isDestroyed() && !ghosted) {
-    win.setIgnoreMouseEvents(!pointerInteractive, { forward: true });
-  }
 });
 ipcMain.on("window:expanded", (_event, expanded) => {
   if (!win || win.isDestroyed()) return;
@@ -466,6 +484,7 @@ ipcMain.on("window:expanded", (_event, expanded) => {
   const desiredHeight = expanded ? Math.min(690, 315 + sessions.length * 68) : 300;
   const next = clampBounds({ ...current, height: desiredHeight }, displaySnapshot());
   win.setBounds(next, true);
+  applyWindowShape(isExpanded);
 });
 ipcMain.on("drag:start", (_event, point) => {
   if (!win || win.isDestroyed()) return;
