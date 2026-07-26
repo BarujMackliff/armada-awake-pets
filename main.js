@@ -280,7 +280,13 @@ function applyCommand(command) {
   } else if (command.action === "roam") {
     config.roamEnabled = Boolean(command.enabled);
     saveConfig();
-    if (config.roamEnabled) scheduleRoam(1200);
+    if (config.roamEnabled) {
+      isExpanded = false;
+      win.webContents.send("collapse-panel");
+      const current = win.getBounds();
+      win.setBounds(clampBounds({ ...current, height: 300 }, displaySnapshot()), true);
+      scheduleRoam(1200);
+    }
     else {
       clearTimeout(roamTimer);
       clearInterval(roamStepTimer);

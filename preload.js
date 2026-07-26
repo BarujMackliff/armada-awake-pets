@@ -12,5 +12,6 @@ contextBridge.exposeInMainWorld("crixus", {
   onSessions: (callback) => ipcRenderer.on("sessions", (_event, sessions) => callback(sessions)),
   onPose: (callback) => ipcRenderer.on("force-pose", (_event, pose) => callback(pose)),
   onRoam: (callback) => ipcRenderer.on("roam-state", (_event, state) => callback(state)),
+  onCollapse: (callback) => ipcRenderer.on("collapse-panel", () => callback()),
   onScannerError: (callback) => ipcRenderer.on("scanner-error", (_event, message) => callback(message))
 });

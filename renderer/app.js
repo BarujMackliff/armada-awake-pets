@@ -38,6 +38,7 @@ let currentPose = "";
 let forcedUntil = 0;
 let forcedTimer;
 let dragging = false;
+let collapseTimer;
 
 function setPose(name) {
   if (!poses[name] || name === currentPose) return;
@@ -111,10 +112,12 @@ function renderSessions(nextSessions) {
 }
 
 function setExpanded(next) {
+  clearTimeout(collapseTimer);
   expanded = Boolean(next && sessions.length > 1);
   panel.hidden = !expanded;
   chevron.classList.toggle("open", expanded);
   window.crixus.setExpanded(expanded);
+  if (expanded) collapseTimer = setTimeout(() => setExpanded(false), 15_000);
 }
 
 missionCard.addEventListener("click", () => {
@@ -154,6 +157,7 @@ window.crixus.onPose(forcePose);
 window.crixus.onRoam(({ active }) => {
   pet.classList.toggle("roaming", Boolean(active));
 });
+window.crixus.onCollapse(() => setExpanded(false));
 window.crixus.onScannerError(() => {
   status.textContent = "Session scanner retrying…";
   forcePose({ name: "blocked", duration: 2200 });
