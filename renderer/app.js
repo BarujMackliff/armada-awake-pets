@@ -39,6 +39,26 @@ let forcedUntil = 0;
 let forcedTimer;
 let dragging = false;
 let collapseTimer;
+let motionTimer;
+let activityTimer;
+let dragLastX = 0;
+
+const motionClasses = [
+  "motion-jump", "motion-sword", "motion-scratch", "motion-sit",
+  "motion-patrol-left", "motion-patrol-right", "motion-look",
+  "motion-shield", "motion-sleep"
+];
+const motionDefinitions = {
+  jump: { pose: "success", className: "motion-jump", duration: 1900 },
+  sword: { pose: "battle-ready", className: "motion-sword", duration: 2300 },
+  scratch: { pose: "thinking", className: "motion-scratch", duration: 3000 },
+  sit: { pose: "thinking", className: "motion-sit", duration: 3600 },
+  "patrol-left": { pose: "walking", className: "motion-patrol-left", duration: 2600 },
+  "patrol-right": { pose: "walking", className: "motion-patrol-right", duration: 2600 },
+  look: { pose: "alert", className: "motion-look", duration: 2400 },
+  shield: { pose: "blocked", className: "motion-shield", duration: 2300 },
+  sleep: { pose: "off-duty", className: "motion-sleep", duration: 4200 }
+};
 
 function setPose(name) {
   if (!poses[name] || name === currentPose) return;
@@ -67,6 +87,40 @@ function forcePose({ name, duration }) {
     forcedUntil = 0;
     automaticPose();
   }, Number(duration || 5000));
+}
+
+function clearMotionClasses() {
+  pet.classList.remove(...motionClasses);
+}
+
+function scheduleActivity(delay) {
+  clearTimeout(activityTimer);
+  const wait = delay ?? Math.round(18_000 + Math.random() * 24_000);
+  activityTimer = setTimeout(() => {
+    if (dragging || expanded || Date.now() < forcedUntil) {
+      scheduleActivity(8000);
+      return;
+    }
+    runMotion({ name: "random" });
+  }, wait);
+}
+
+function runMotion({ name = "random", duration } = {}) {
+  clearTimeout(motionTimer);
+  clearMotionClasses();
+  const names = Object.keys(motionDefinitions);
+  const chosen = name === "random" ? names[Math.floor(Math.random() * names.length)] : name;
+  const motion = motionDefinitions[chosen] || motionDefinitions.look;
+  const actualDuration = Number(duration) || motion.duration;
+  forcedUntil = Date.now() + actualDuration;
+  setPose(motion.pose);
+  pet.classList.add(motion.className);
+  motionTimer = setTimeout(() => {
+    clearMotionClasses();
+    forcedUntil = 0;
+    automaticPose();
+    scheduleActivity();
+  }, actualDuration);
 }
 
 function renderPanel() {
@@ -131,21 +185,55 @@ missionCard.addEventListener("click", () => {
 
 chevron.addEventListener("click", () => setExpanded(!expanded));
 
-avatarDrag.addEventListener("mousedown", () => {
+avatarDrag.addEventListener("pointerdown", (event) => {
+  if (event.button !== 0) return;
+  event.preventDefault();
   dragging = true;
-  window.crixus.setDragging(true);
+  dragLastX = event.screenX;
+  avatarDrag.setPointerCapture(event.pointerId);
+  avatarDrag.classList.add("dragging");
+  clearMotionClasses();
+  window.crixus.startDrag({ screenX: event.screenX, screenY: event.screenY });
   setPose("walking");
 });
-window.addEventListener("mouseup", () => {
+
+avatarDrag.addEventListener("pointermove", (event) => {
+  if (!dragging) return;
+  const deltaX = event.screenX - dragLastX;
+  if (deltaX < -1) {
+    avatarDrag.classList.add("facing-left");
+    avatarDrag.classList.remove("facing-right");
+  } else if (deltaX > 1) {
+    avatarDrag.classList.add("facing-right");
+    avatarDrag.classList.remove("facing-left");
+  }
+  dragLastX = event.screenX;
+  window.crixus.moveDrag({ screenX: event.screenX, screenY: event.screenY });
+});
+
+function finishDrag(event) {
   if (!dragging) return;
   dragging = false;
-  window.crixus.setDragging(false);
+  avatarDrag.classList.remove("dragging");
+  if (event?.pointerId && avatarDrag.hasPointerCapture(event.pointerId)) {
+    avatarDrag.releasePointerCapture(event.pointerId);
+  }
+  window.crixus.endDrag();
   automaticPose();
-});
+  scheduleActivity(12_000);
+}
+
+avatarDrag.addEventListener("pointerup", finishDrag);
+avatarDrag.addEventListener("pointercancel", finishDrag);
 
 document.addEventListener("mousemove", (event) => {
   const element = document.elementFromPoint(event.clientX, event.clientY);
-  window.crixus.setInteractive(Boolean(element?.closest(".hit-region")));
+  let region = "none";
+  if (element?.closest("#avatar-drag")) region = "avatar";
+  else if (element?.closest("#session-panel")) region = "panel";
+  else if (element?.closest("#mission-card")) region = "card";
+  else if (element?.closest("#chevron")) region = "chevron";
+  window.crixus.setInteractive({ interactive: region !== "none", region });
 });
 
 window.crixus.onSessions((next) => {
@@ -158,6 +246,8 @@ window.crixus.onRoam(({ active }) => {
   pet.classList.toggle("roaming", Boolean(active));
 });
 window.crixus.onCollapse(() => setExpanded(false));
+window.crixus.onMotion(runMotion);
+window.crixus.onGhost(({ active }) => pet.classList.toggle("ghosted", Boolean(active)));
 window.crixus.onScannerError(() => {
   status.textContent = "Session scanner retrying…";
   forcePose({ name: "blocked", duration: 2200 });
@@ -173,4 +263,5 @@ Promise.all([window.crixus.getCharacter(), window.crixus.getSessions()]).then(([
   avatar.src = poses.alert;
   currentPose = "alert";
   renderSessions(activeSessions);
+  scheduleActivity(5000);
 });

@@ -30,6 +30,7 @@ button {
   width: 420px;
   margin: 0 auto;
   padding-top: 10px;
+  transition: filter 180ms ease;
 }
 
 .avatar-drag {
@@ -38,11 +39,12 @@ button {
   margin: 0 auto -15px;
   display: grid;
   place-items: end center;
-  -webkit-app-region: drag;
+  -webkit-app-region: no-drag;
+  touch-action: none;
   cursor: grab;
 }
 
-.avatar-drag:active {
+.avatar-drag.dragging {
   cursor: grabbing;
 }
 
@@ -59,6 +61,14 @@ button {
   transition: opacity 110ms ease, transform 150ms ease;
 }
 
+.avatar-drag.facing-left img {
+  scale: -1 1;
+}
+
+.avatar-drag.facing-right img {
+  scale: 1 1;
+}
+
 .avatar-drag img.swap {
   opacity: 0.25;
   transform: scale(0.96);
@@ -68,6 +78,44 @@ button {
   animation: crixus-walk-bob 360ms ease-in-out infinite alternate;
 }
 
+.pet.ghosted {
+  filter: saturate(0.55);
+}
+
+.pet.motion-jump .avatar-drag img {
+  animation: crixus-jump 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 2;
+}
+
+.pet.motion-sword .avatar-drag img {
+  animation: crixus-sword 650ms ease-in-out 3;
+  transform-origin: 50% 92%;
+}
+
+.pet.motion-scratch .avatar-drag img {
+  animation: crixus-scratch 720ms ease-in-out 4;
+}
+
+.pet.motion-sit .avatar-drag img,
+.pet.motion-sleep .avatar-drag img {
+  animation: crixus-sit 1.8s ease-in-out infinite;
+}
+
+.pet.motion-patrol-left .avatar-drag {
+  animation: crixus-patrol-left 2.5s ease-in-out;
+}
+
+.pet.motion-patrol-right .avatar-drag {
+  animation: crixus-patrol-right 2.5s ease-in-out;
+}
+
+.pet.motion-look .avatar-drag img {
+  animation: crixus-look 800ms ease-in-out 3;
+}
+
+.pet.motion-shield .avatar-drag img {
+  animation: crixus-shield 320ms ease-in-out 5;
+}
+
 @keyframes crixus-breathe {
   0%,
   100% {
@@ -75,6 +123,92 @@ button {
   }
   50% {
     transform: translateY(-5px) rotate(0.5deg);
+  }
+}
+
+@keyframes crixus-jump {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  18% {
+    transform: translateY(5px) scaleY(0.94);
+  }
+  55% {
+    transform: translateY(-30px) scaleY(1.04);
+  }
+}
+
+@keyframes crixus-sword {
+  0%,
+  100% {
+    transform: rotate(-2deg) translateY(0);
+  }
+  48% {
+    transform: rotate(9deg) translateY(-5px);
+  }
+}
+
+@keyframes crixus-scratch {
+  0%,
+  100% {
+    transform: rotate(-1deg);
+  }
+  50% {
+    transform: rotate(3deg) translateY(-3px);
+  }
+}
+
+@keyframes crixus-sit {
+  0%,
+  100% {
+    transform: translateY(2px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes crixus-patrol-left {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-56px);
+  }
+}
+
+@keyframes crixus-patrol-right {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(56px);
+  }
+}
+
+@keyframes crixus-look {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  35% {
+    transform: translateX(-8px) rotate(-2deg);
+  }
+  70% {
+    transform: translateX(8px) rotate(2deg);
+  }
+}
+
+@keyframes crixus-shield {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-5px);
   }
 }
 

@@ -2,11 +2,12 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { app, BrowserWindow, ipcMain, screen, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, powerMonitor, screen, shell } = require("electron");
 const { discoverSessions } = require("./lib/sessions");
-const { clampBounds, chooseRoamTarget } = require("./lib/geometry");
+const { clampBounds, chooseSafeEdgeTarget } = require("./lib/geometry");
 const { buildSessionRoute } = require("./lib/routes");
 const { loadCharacter } = require("./lib/character");
+const { queryWindow } = require("./lib/windows");
 
 const localData = process.env.LOCALAPPDATA || app.getPath("userData");
 const runtimeDir = path.join(localData, "PRBE", "CrixusAwakePet");
@@ -27,18 +28,26 @@ let forcedPoseTimer;
 let roamTimer;
 let roamStepTimer;
 let boundsWriteTimer;
+let obstructionTimer;
 let isExpanded = false;
 let isDragging = false;
 let isAutoMoving = false;
-let lastManualMoveAt = 0;
+let dragOrigin = null;
+let suppressMoveEventsUntil = 0;
+let pointerInteractive = false;
+let pointerRegion = "none";
+let pointerInsideSince = 0;
+let ghosted = false;
+let lastAction = "Started";
+let lastError = "";
 let config;
 let character;
 
 const defaultConfig = {
   roamEnabled: true,
-  roamMinMs: 9000,
-  roamMaxMs: 17000,
-  crossMonitorChance: 0.24
+  minimumIdleSeconds: 60,
+  pinChoicesMinutes: [14, 34, 44],
+  nextRelocationAt: 0
 };
 
 function ensureRuntimeDir() {
@@ -95,7 +104,12 @@ function saveBounds() {
 }
 
 function loadConfig() {
-  return { ...defaultConfig, ...(readJson(configPath, {}) || {}) };
+  const loaded = { ...defaultConfig, ...(readJson(configPath, {}) || {}) };
+  loaded.pinChoicesMinutes = Array.isArray(loaded.pinChoicesMinutes)
+    ? loaded.pinChoicesMinutes.filter((value) => [14, 34, 44].includes(Number(value)))
+    : [...defaultConfig.pinChoicesMinutes];
+  if (!loaded.pinChoicesMinutes.length) loaded.pinChoicesMinutes = [...defaultConfig.pinChoicesMinutes];
+  return loaded;
 }
 
 function saveConfig() {
@@ -119,70 +133,178 @@ function writeRuntime() {
     displays: displaySnapshot(),
     roamEnabled: Boolean(config?.roamEnabled),
     roaming: isAutoMoving,
+    nextRelocationAt: config?.nextRelocationAt
+      ? new Date(config.nextRelocationAt).toISOString()
+      : null,
+    pinnedForSeconds: config?.nextRelocationAt
+      ? Math.max(0, Math.round((config.nextRelocationAt - Date.now()) / 1000))
+      : 0,
+    systemIdleSeconds: powerMonitor.getSystemIdleTime(),
+    lastAction,
+    lastError,
     updatedAt: new Date().toISOString()
   });
+}
+
+function nextPinDurationMs() {
+  const choices = config.pinChoicesMinutes;
+  return choices[Math.floor(Math.random() * choices.length)] * 60_000;
+}
+
+function pinPosition(reason = "Position pinned") {
+  config.nextRelocationAt = Date.now() + nextPinDurationMs();
+  lastAction = reason;
+  saveConfig();
+  scheduleRoam();
+  writeRuntime();
+}
+
+function deferRelocation(minutes, reason) {
+  config.nextRelocationAt = Date.now() + minutes * 60_000;
+  lastAction = reason;
+  saveConfig();
+  scheduleRoam();
+  writeRuntime();
 }
 
 function scheduleRoam(delay) {
   clearTimeout(roamTimer);
   if (!config?.roamEnabled) return;
-  const min = Math.max(5000, Number(config.roamMinMs) || defaultConfig.roamMinMs);
-  const max = Math.max(min, Number(config.roamMaxMs) || defaultConfig.roamMaxMs);
-  const wait = delay ?? Math.round(min + Math.random() * (max - min));
+  if (!Number(config.nextRelocationAt) || config.nextRelocationAt <= Date.now()) {
+    config.nextRelocationAt = Date.now() + nextPinDurationMs();
+    saveConfig();
+  }
+  const wait = delay ?? Math.max(1000, config.nextRelocationAt - Date.now());
   roamTimer = setTimeout(performRoam, wait);
 }
 
-function performRoam() {
-  if (
-    !win || win.isDestroyed() || !win.isVisible() || isExpanded || isDragging ||
-    Date.now() - lastManualMoveAt < 6000
-  ) {
-    scheduleRoam(5000);
-    return;
-  }
-  const start = win.getBounds();
-  const target = chooseRoamTarget(start, displaySnapshot(), {
-    crossMonitorChance: Number(config.crossMonitorChance) || defaultConfig.crossMonitorChance
+function animateWindowTo(target, duration = 1800) {
+  return new Promise((resolve) => {
+    if (!win || win.isDestroyed()) return resolve(false);
+    const start = win.getBounds();
+    const distance = Math.hypot(target.x - start.x, target.y - start.y);
+    if (distance < 24) return resolve(false);
+    const steps = Math.max(24, Math.min(60, Math.round(distance / 45)));
+    const interval = Math.max(24, Math.round(duration / steps));
+    let step = 0;
+    isAutoMoving = true;
+    suppressMoveEventsUntil = Date.now() + duration + 800;
+    win.webContents.send("roam-state", { active: true, duration });
+    win.webContents.send("force-pose", { name: "walking", duration: duration + 600 });
+    writeRuntime();
+    clearInterval(roamStepTimer);
+    roamStepTimer = setInterval(() => {
+      if (!win || win.isDestroyed() || isDragging) {
+        clearInterval(roamStepTimer);
+        isAutoMoving = false;
+        resolve(false);
+        return;
+      }
+      step += 1;
+      const progress = step / steps;
+      const eased = progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      win.setPosition(
+        Math.round(start.x + (target.x - start.x) * eased),
+        Math.round(start.y + (target.y - start.y) * eased),
+        false
+      );
+      if (step >= steps) {
+        clearInterval(roamStepTimer);
+        isAutoMoving = false;
+        win.webContents.send("roam-state", { active: false });
+        saveBounds();
+        resolve(true);
+      }
+    }, interval);
   });
-  const distance = Math.hypot(target.x - start.x, target.y - start.y);
-  if (distance < 30) {
-    scheduleRoam();
+}
+
+async function safeTargetForWindow(windowInfo) {
+  const start = { ...win.getBounds(), width: 440, height: 300 };
+  const activeRect = {
+    x: Number(windowInfo.x),
+    y: Number(windowInfo.y),
+    width: Number(windowInfo.width),
+    height: Number(windowInfo.height)
+  };
+  const display = screen.getDisplayMatching(activeRect);
+  return chooseSafeEdgeTarget(display, screen.getCursorScreenPoint(), start, activeRect);
+}
+
+async function performRoam() {
+  if (!win || win.isDestroyed() || !win.isVisible() || !config.roamEnabled) return;
+  if (isExpanded || isDragging) {
+    deferRelocation(2, "Relocation deferred while CRIXUS is being used");
     return;
   }
-  const steps = Math.max(24, Math.min(55, Math.round(distance / 55)));
-  const duration = Math.max(1400, Math.min(3200, distance * 0.9));
-  const interval = Math.max(24, Math.round(duration / steps));
-  let step = 0;
-  isAutoMoving = true;
-  win.webContents.send("roam-state", { active: true, duration });
-  win.webContents.send("force-pose", { name: "walking", duration: duration + 500 });
-  writeRuntime();
-  clearInterval(roamStepTimer);
-  roamStepTimer = setInterval(() => {
-    if (!win || win.isDestroyed() || isDragging) {
-      clearInterval(roamStepTimer);
-      isAutoMoving = false;
-      scheduleRoam();
-      return;
-    }
-    step += 1;
-    const progress = step / steps;
-    const eased = progress < 0.5
-      ? 2 * progress * progress
-      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-    win.setPosition(
-      Math.round(start.x + (target.x - start.x) * eased),
-      Math.round(start.y + (target.y - start.y) * eased),
-      false
+  const idleSeconds = powerMonitor.getSystemIdleTime();
+  if (idleSeconds < Number(config.minimumIdleSeconds || 60)) {
+    deferRelocation(2, `Relocation deferred: user active (${idleSeconds}s idle)`);
+    return;
+  }
+  try {
+    const foreground = await queryWindow();
+    const target = await safeTargetForWindow(foreground);
+    const moved = await animateWindowTo(target, 2200);
+    pinPosition(
+      moved
+        ? `Moved to a safe edge of ${foreground.processName}`
+        : `Stayed at the safe edge of ${foreground.processName}`
     );
-    if (step >= steps) {
-      clearInterval(roamStepTimer);
-      isAutoMoving = false;
-      win.webContents.send("roam-state", { active: false });
-      saveBounds();
-      scheduleRoam();
-    }
-  }, interval);
+  } catch (error) {
+    lastError = String(error.message || error);
+    deferRelocation(2, "Relocation deferred after window inspection error");
+  }
+}
+
+async function moveToNamedApp(appName) {
+  if (!win || win.isDestroyed()) return;
+  try {
+    const targetWindow = await queryWindow(appName);
+    const target = await safeTargetForWindow(targetWindow);
+    isExpanded = false;
+    win.webContents.send("collapse-panel");
+    win.setBounds(clampBounds({ ...win.getBounds(), height: 300 }, displaySnapshot()), true);
+    await animateWindowTo(target, 1900);
+    lastError = "";
+    pinPosition(`Moved safely to ${targetWindow.processName}: ${targetWindow.title || appName}`);
+    win.webContents.send("run-motion", { name: "look", duration: 2400 });
+  } catch (error) {
+    lastError = String(error.message || error);
+    lastAction = `Could not find open app: ${appName}`;
+    win.webContents.send("force-pose", { name: "blocked", duration: 4000 });
+    writeRuntime();
+  }
+}
+
+function setGhosted(next) {
+  if (!win || win.isDestroyed() || ghosted === next) return;
+  ghosted = next;
+  win.setOpacity(next ? 0.16 : 1);
+  win.webContents.send("ghost-state", { active: next });
+  win.setIgnoreMouseEvents(next || !pointerInteractive, { forward: true });
+}
+
+function obstructionGuard() {
+  if (!win || win.isDestroyed() || !win.isVisible() || isDragging || isExpanded) {
+    pointerInsideSince = 0;
+    setGhosted(false);
+    return;
+  }
+  const cursor = screen.getCursorScreenPoint();
+  const bounds = win.getBounds();
+  const inside =
+    cursor.x >= bounds.x && cursor.x < bounds.x + bounds.width &&
+    cursor.y >= bounds.y && cursor.y < bounds.y + bounds.height;
+  if (inside && pointerRegion === "avatar" && powerMonitor.getSystemIdleTime() < 3) {
+    if (!pointerInsideSince) pointerInsideSince = Date.now();
+    if (Date.now() - pointerInsideSince > 1200) setGhosted(true);
+  } else {
+    pointerInsideSince = 0;
+    setGhosted(false);
+  }
 }
 
 function createWindow() {
@@ -210,10 +332,10 @@ function createWindow() {
     win.showInactive();
     writeRuntime();
     refreshSessions();
-    scheduleRoam(6000);
+    scheduleRoam();
+    obstructionTimer = setInterval(obstructionGuard, 180);
   });
   win.on("move", () => {
-    if (!isAutoMoving) lastManualMoveAt = Date.now();
     clearTimeout(boundsWriteTimer);
     boundsWriteTimer = setTimeout(saveBounds, 240);
   });
@@ -277,20 +399,43 @@ function applyCommand(command) {
     refreshSessions();
   } else if (command.action === "route") {
     routeToSession(command.sessionId);
+  } else if (command.action === "move-to") {
+    moveToNamedApp(command.appName);
+  } else if (command.action === "animate") {
+    win.webContents.send("run-motion", {
+      name: command.motion || "random",
+      duration: Math.max(900, Math.min(Number(command.duration) || 3000, 15_000))
+    });
+  } else if (command.action === "yield") {
+    const duration = Math.max(5_000, Math.min(Number(command.duration) || 30_000, 10 * 60_000));
+    lastAction = `Yielding for ${Math.round(duration / 1000)} seconds`;
+    win.webContents.send("force-pose", { name: "off-duty", duration: 700 });
+    setTimeout(() => win && !win.isDestroyed() && win.hide(), 500);
+    setTimeout(() => {
+      if (!win || win.isDestroyed()) return;
+      win.showInactive();
+      lastAction = "Returned after yielding";
+      writeRuntime();
+    }, duration);
   } else if (command.action === "roam") {
     config.roamEnabled = Boolean(command.enabled);
-    saveConfig();
     if (config.roamEnabled) {
       isExpanded = false;
       win.webContents.send("collapse-panel");
       const current = win.getBounds();
       win.setBounds(clampBounds({ ...current, height: 300 }, displaySnapshot()), true);
-      scheduleRoam(1200);
+      config.nextRelocationAt = Date.now() + nextPinDurationMs();
+      lastAction = "Smart relocation enabled; position pinned until the next long cooldown";
+      saveConfig();
+      scheduleRoam();
     }
     else {
       clearTimeout(roamTimer);
       clearInterval(roamStepTimer);
       isAutoMoving = false;
+      config.nextRelocationAt = 0;
+      lastAction = "Window relocation disabled; in-place animations remain active";
+      saveConfig();
       win.webContents.send("roam-state", { active: false });
     }
   }
@@ -307,8 +452,12 @@ function pollCommands() {
 ipcMain.handle("sessions:get", () => sessions);
 ipcMain.handle("character:get", () => character);
 ipcMain.handle("session:open", (_event, id) => routeToSession(id));
-ipcMain.on("window:interactive", (_event, interactive) => {
-  if (win && !win.isDestroyed()) win.setIgnoreMouseEvents(!interactive, { forward: true });
+ipcMain.on("window:interactive", (_event, detail) => {
+  pointerInteractive = typeof detail === "object" ? Boolean(detail.interactive) : Boolean(detail);
+  pointerRegion = typeof detail === "object" ? String(detail.region || "none") : "unknown";
+  if (win && !win.isDestroyed() && !ghosted) {
+    win.setIgnoreMouseEvents(!pointerInteractive, { forward: true });
+  }
 });
 ipcMain.on("window:expanded", (_event, expanded) => {
   if (!win || win.isDestroyed()) return;
@@ -318,16 +467,39 @@ ipcMain.on("window:expanded", (_event, expanded) => {
   const next = clampBounds({ ...current, height: desiredHeight }, displaySnapshot());
   win.setBounds(next, true);
 });
-ipcMain.on("window:dragging", (_event, dragging) => {
-  isDragging = Boolean(dragging);
-  if (isDragging) {
-    clearInterval(roamStepTimer);
-    isAutoMoving = false;
-    win?.webContents.send("roam-state", { active: false });
-  } else {
-    lastManualMoveAt = Date.now();
-    scheduleRoam();
-  }
+ipcMain.on("drag:start", (_event, point) => {
+  if (!win || win.isDestroyed()) return;
+  isDragging = true;
+  setGhosted(false);
+  clearInterval(roamStepTimer);
+  clearTimeout(roamTimer);
+  isAutoMoving = false;
+  dragOrigin = {
+    pointerX: Number(point.screenX),
+    pointerY: Number(point.screenY),
+    bounds: win.getBounds()
+  };
+  lastAction = "Manual drag started";
+  win.webContents.send("roam-state", { active: false });
+});
+ipcMain.on("drag:move", (_event, point) => {
+  if (!win || win.isDestroyed() || !isDragging || !dragOrigin) return;
+  suppressMoveEventsUntil = Date.now() + 500;
+  win.setPosition(
+    Math.round(dragOrigin.bounds.x + Number(point.screenX) - dragOrigin.pointerX),
+    Math.round(dragOrigin.bounds.y + Number(point.screenY) - dragOrigin.pointerY),
+    false
+  );
+});
+ipcMain.on("drag:end", () => {
+  if (!win || win.isDestroyed() || !isDragging) return;
+  isDragging = false;
+  dragOrigin = null;
+  const clamped = clampBounds(win.getBounds(), displaySnapshot());
+  suppressMoveEventsUntil = Date.now() + 500;
+  win.setBounds(clamped, true);
+  saveBounds();
+  pinPosition("Manual drop pinned for a long cooldown");
 });
 
 const gotLock = app.requestSingleInstanceLock();
@@ -358,6 +530,7 @@ app.on("before-quit", () => {
   clearTimeout(roamTimer);
   clearInterval(roamStepTimer);
   clearTimeout(boundsWriteTimer);
+  clearInterval(obstructionTimer);
   try {
     fs.unlinkSync(runtimePath);
   } catch {

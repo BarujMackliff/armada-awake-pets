@@ -1,9 +1,12 @@
 param(
-  [ValidateSet("enable", "disable", "toggle", "quit", "status", "refresh", "pose", "route", "roam")]
+  [ValidateSet("enable", "disable", "toggle", "quit", "status", "refresh", "pose", "route", "roam", "move-to", "animate", "yield")]
   [string]$Action = "enable",
   [ValidateSet("alert", "working", "walking", "thinking", "success", "error-log", "checkpoint", "waiting", "battle-ready", "routing", "blocked", "off-duty")]
   [string]$Pose = "alert",
   [string]$SessionId = "",
+  [string]$AppName = "",
+  [ValidateSet("random", "jump", "sword", "scratch", "sit", "patrol-left", "patrol-right", "look", "shield", "sleep")]
+  [string]$Motion = "random",
   [ValidateSet("on", "off")]
   [string]$Mode = "on",
   [int]$Duration = 5000
@@ -51,6 +54,11 @@ if ($Action -eq "status") {
       bounds = $runtime.bounds
       roamEnabled = [bool]$runtime.roamEnabled
       roaming = [bool]$runtime.roaming
+      nextRelocationAt = $runtime.nextRelocationAt
+      pinnedForSeconds = [int]$runtime.pinnedForSeconds
+      systemIdleSeconds = [int]$runtime.systemIdleSeconds
+      lastAction = $runtime.lastAction
+      lastError = $runtime.lastError
       updatedAt = $runtime.updatedAt
     } | ConvertTo-Json -Depth 5
     exit 0
@@ -92,7 +100,20 @@ switch ($Action) {
   }
   "roam" {
     Send-CrixusCommand "roam" @{ enabled = ($Mode -eq "on") }
-    "CRIXUS autonomous roaming: $Mode"
+    "CRIXUS smart relocation: $Mode"
+  }
+  "move-to" {
+    if (-not $AppName.Trim()) { throw "AppName is required, for example: -AppName Obsidian" }
+    Send-CrixusCommand "move-to" @{ appName = $AppName.Trim() }
+    "CRIXUS moving to a safe edge near $AppName."
+  }
+  "animate" {
+    Send-CrixusCommand "animate" @{ motion = $Motion; duration = [Math]::Max(900, [Math]::Min($Duration, 15000)) }
+    "CRIXUS animation: $Motion"
+  }
+  "yield" {
+    Send-CrixusCommand "yield" @{ duration = [Math]::Max(5000, [Math]::Min($Duration, 600000)) }
+    "CRIXUS yielding the screen."
   }
   "pose" {
     Send-CrixusCommand "pose" @{ pose = $Pose; duration = [Math]::Max(700, [Math]::Min($Duration, 60000)) }

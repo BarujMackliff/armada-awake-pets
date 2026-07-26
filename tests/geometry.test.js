@@ -2,7 +2,12 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { clampBounds, chooseRoamTarget } = require("../lib/geometry");
+const {
+  clampBounds,
+  chooseRoamTarget,
+  chooseSafeEdgeTarget,
+  rectanglesOverlap
+} = require("../lib/geometry");
 
 test("keeps the pet inside the selected monitor work area", () => {
   const displays = [{
@@ -12,6 +17,38 @@ test("keeps the pet inside the selected monitor work area", () => {
   assert.deepEqual(
     clampBounds({ x: 2800, y: 1000, width: 440, height: 300 }, displays),
     { x: 2480, y: 740, width: 440, height: 300 }
+  );
+});
+
+test("safe placement chooses an edge away from the cursor", () => {
+  const display = {
+    bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+    workArea: { x: 0, y: 0, width: 1920, height: 1040 }
+  };
+  const target = chooseSafeEdgeTarget(
+    display,
+    { x: 1800, y: 900 },
+    { width: 440, height: 300 },
+    { x: 0, y: 0, width: 1920, height: 1040 }
+  );
+  assert.ok(target.x < 500);
+  assert.ok(target.y < 500);
+});
+
+test("rectangle overlap correctly identifies covered content", () => {
+  assert.equal(
+    rectanglesOverlap(
+      { x: 0, y: 0, width: 100, height: 100 },
+      { x: 50, y: 50, width: 100, height: 100 }
+    ),
+    true
+  );
+  assert.equal(
+    rectanglesOverlap(
+      { x: 0, y: 0, width: 100, height: 100 },
+      { x: 101, y: 0, width: 100, height: 100 }
+    ),
+    false
   );
 });
 
