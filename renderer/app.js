@@ -1,6 +1,6 @@
 "use strict";
 
-const poses = {
+let poses = {
   alert: "../assets/crixus-alert.png",
   working: "../assets/crixus-working.png",
   walking: "../assets/crixus-walking.png",
@@ -13,6 +13,13 @@ const poses = {
   routing: "../assets/crixus-routing.png",
   blocked: "../assets/crixus-blocked.png",
   "off-duty": "../assets/crixus-off-duty.png"
+};
+let character = {
+  name: "CRIXUS",
+  displayName: "CRIXUS Awake Pet",
+  emptyStatus: "Waiting for an Anti-Gravity session",
+  missionSingular: "mission",
+  missionPlural: "missions"
 };
 
 const avatar = document.querySelector("#avatar");
@@ -89,13 +96,13 @@ function renderSessions(nextSessions) {
   count.hidden = sessions.length < 2;
   count.textContent = sessions.length;
   if (!sessions.length) {
-    title.textContent = "CRIXUS Awake Pet";
-    status.textContent = "Waiting for an Anti-Gravity session";
+    title.textContent = character.displayName;
+    status.textContent = character.emptyStatus;
   } else if (sessions.length === 1) {
     title.textContent = sessions[0].title;
     status.textContent = `${sessions[0].status} · ${sessions[0].summary}`;
   } else {
-    title.textContent = `${sessions.length} CRIXUS missions active`;
+    title.textContent = `${sessions.length} ${character.name} ${character.missionPlural} active`;
     const working = sessions.filter((session) => session.state === "working").length;
     status.textContent = working ? `${working} working now · click to choose` : "Click to choose a mission";
   }
@@ -152,5 +159,14 @@ window.crixus.onScannerError(() => {
   forcePose({ name: "blocked", duration: 2200 });
 });
 
-window.crixus.getSessions().then(renderSessions);
-setPose("alert");
+Promise.all([window.crixus.getCharacter(), window.crixus.getSessions()]).then(([pack, activeSessions]) => {
+  character = { ...character, ...pack };
+  poses = Object.fromEntries(
+    Object.entries(pack.assets).map(([state, relative]) => [state, `../${relative.replaceAll("\\", "/")}`])
+  );
+  avatar.alt = `${character.name} desktop companion`;
+  title.textContent = character.displayName;
+  avatar.src = poses.alert;
+  currentPose = "alert";
+  renderSessions(activeSessions);
+});

@@ -1,0 +1,21 @@
+{
+  "name": "CRIXUS",
+  "displayName": "CRIXUS Awake Pet",
+  "emptyStatus": "Waiting for an Anti-Gravity session",
+  "missionSingular": "mission",
+  "missionPlural": "missions",
+  "assets": {
+    "alert": "assets/crixus-alert.png",
+    "working": "assets/crixus-working.png",
+    "walking": "assets/crixus-walking.png",
+    "thinking": "assets/crixus-thinking.png",
+    "success": "assets/crixus-success.png",
+    "error-log": "assets/crixus-error-log.png",
+    "checkpoint": "assets/crixus-checkpoint.png",
+    "waiting": "assets/crixus-waiting.png",
+    "battle-ready": "assets/crixus-battle-ready.png",
+    "routing": "assets/crixus-routing.png",
+    "blocked": "assets/crixus-blocked.png",
+    "off-duty": "assets/crixus-off-duty.png"
+  }
+}

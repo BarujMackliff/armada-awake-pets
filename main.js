@@ -6,6 +6,7 @@ const { app, BrowserWindow, ipcMain, screen, shell } = require("electron");
 const { discoverSessions } = require("./lib/sessions");
 const { clampBounds, chooseRoamTarget } = require("./lib/geometry");
 const { buildSessionRoute } = require("./lib/routes");
+const { loadCharacter } = require("./lib/character");
 
 const localData = process.env.LOCALAPPDATA || app.getPath("userData");
 const runtimeDir = path.join(localData, "PRBE", "CrixusAwakePet");
@@ -31,6 +32,7 @@ let isDragging = false;
 let isAutoMoving = false;
 let lastManualMoveAt = 0;
 let config;
+let character;
 
 const defaultConfig = {
   roamEnabled: true,
@@ -297,6 +299,7 @@ function pollCommands() {
 }
 
 ipcMain.handle("sessions:get", () => sessions);
+ipcMain.handle("character:get", () => character);
 ipcMain.handle("session:open", (_event, id) => routeToSession(id));
 ipcMain.on("window:interactive", (_event, interactive) => {
   if (win && !win.isDestroyed()) win.setIgnoreMouseEvents(!interactive, { forward: true });
@@ -334,6 +337,7 @@ if (!gotLock) {
   app.whenReady().then(() => {
     ensureRuntimeDir();
     config = loadConfig();
+    character = loadCharacter(__dirname);
     lastCommandNonce = readJson(commandPath)?.nonce || "";
     createWindow();
     sessionTimer = setInterval(refreshSessions, 3000);

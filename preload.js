@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("crixus", {
   getSessions: () => ipcRenderer.invoke("sessions:get"),
+  getCharacter: () => ipcRenderer.invoke("character:get"),
   openSession: (id) => ipcRenderer.invoke("session:open", id),
   setInteractive: (interactive) => ipcRenderer.send("window:interactive", interactive),
   setExpanded: (expanded) => ipcRenderer.send("window:expanded", expanded),

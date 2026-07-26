@@ -48,6 +48,12 @@ npm.cmd start
 
 The repository is designed as the first Armada Awake Pets character pack. Future agents can reuse the overlay engine while supplying their own original 12-state art set.
 
+## Create another avatar
+
+Fork the repository, edit `character.json`, and replace the twelve transparent PNG paths in its `assets` map. The engine validates every required state at startup, so an incomplete or unsafe pack fails clearly instead of displaying a broken pet.
+
+The reusable states are: `alert`, `working`, `walking`, `thinking`, `success`, `error-log`, `checkpoint`, `waiting`, `battle-ready`, `routing`, `blocked`, and `off-duty`.
+
 ## GitHub synchronization
 
 Every verified change can be tested, scanned for accidentally included credentials, committed, and pushed with:
