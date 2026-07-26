@@ -309,7 +309,7 @@ function obstructionGuard() {
   }
 }
 
-function applyWindowShape(expanded = isExpanded) {
+function applyWindowShape(expanded = isExpanded, heightOverride = null) {
   if (!win || win.isDestroyed() || typeof win.setShape !== "function") return;
   const rectangles = [
     { x: 95, y: 0, width: 250, height: 195 },
@@ -320,7 +320,7 @@ function applyWindowShape(expanded = isExpanded) {
       x: 15,
       y: 246,
       width: 410,
-      height: Math.max(80, win.getBounds().height - 246)
+      height: Math.max(80, Number(heightOverride) || win.getBounds().height - 246)
     });
   }
   win.setShape(rectangles);
@@ -484,7 +484,7 @@ ipcMain.on("window:expanded", (_event, expanded) => {
   const desiredHeight = expanded ? Math.min(690, 315 + sessions.length * 68) : 300;
   const next = clampBounds({ ...current, height: desiredHeight }, displaySnapshot());
   win.setBounds(next, true);
-  applyWindowShape(isExpanded);
+  applyWindowShape(isExpanded, desiredHeight - 246);
 });
 ipcMain.on("drag:start", (_event, point) => {
   if (!win || win.isDestroyed()) return;
