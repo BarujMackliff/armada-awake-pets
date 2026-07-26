@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CRIXUS Awake Pet — 50-Way Perfection Audit</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", sans-serif; }
+    body { margin: 0; background: #111318; color: #f3eadc; }
+    main { max-width: 1120px; margin: auto; padding: 44px 24px 80px; }
+    h1 { margin: 0 0 8px; font-size: 38px; }
+    .lead { color: #b8b2a8; max-width: 780px; line-height: 1.55; }
+    .summary { display: flex; gap: 12px; flex-wrap: wrap; margin: 28px 0; }
+    .pill { padding: 9px 14px; border: 1px solid #493f35; border-radius: 999px; background: #1c1f27; }
+    table { width: 100%; border-collapse: collapse; background: #181b22; border-radius: 18px; overflow: hidden; }
+    th, td { padding: 13px 14px; border-bottom: 1px solid #2b2f39; vertical-align: top; text-align: left; }
+    th { color: #d7b17a; background: #20242d; position: sticky; top: 0; }
+    tr:last-child td { border-bottom: 0; }
+    .done { color: #77d69e; font-weight: 700; }
+    .verified { color: #78b9ff; font-weight: 700; }
+    .next { color: #e2b96f; font-weight: 700; }
+    .law { margin-top: 28px; padding: 18px 20px; border-left: 4px solid #8f2f38; background: #1b1e25; line-height: 1.55; }
+    code { color: #f0c98f; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>CRIXUS Awake Pet — 50-Way Perfection Audit</h1>
+  <p class="lead">A behavioral audit focused on usefulness, obstruction avoidance, meaningful animation, exact session routing, reliability, and safe public distribution. “Implemented” means code exists; “Verified” means the live rig produced evidence.</p>
+  <div class="summary">
+    <span class="pill">Version 0.2.0</span>
+    <span class="pill">11 automated tests</span>
+    <span class="pill">Six-display rig</span>
+    <span class="pill">Public GitHub mirror</span>
+  </div>
+  <table>
+    <thead><tr><th>#</th><th>Improvement</th><th>Status</th><th>Control</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Separate frequent character animation from rare window relocation.</td><td class="done">Implemented</td><td>Two independent schedulers.</td></tr>
+      <tr><td>2</td><td>Replace seconds-long relocation loops with 14/34/44-minute pins.</td><td class="verified">Verified</td><td>Random long cooldown after every drop/move.</td></tr>
+      <tr><td>3</td><td>Never relocate during active typing or mouse use.</td><td class="done">Implemented</td><td>Windows system-idle gate ≥60 seconds.</td></tr>
+      <tr><td>4</td><td>Defer relocation when the mission picker is open.</td><td class="done">Implemented</td><td>Two-minute retry without moving.</td></tr>
+      <tr><td>5</td><td>Choose a safe display edge instead of a random coordinate.</td><td class="verified">Verified</td><td>Eight-candidate edge scorer.</td></tr>
+      <tr><td>6</td><td>Place CRIXUS far from the cursor/caret proxy.</td><td class="verified">Verified</td><td>Obsidian test: 1,797px from cursor.</td></tr>
+      <tr><td>7</td><td>Move to a named open application.</td><td class="verified">Verified</td><td><code>move-to -AppName</code>.</td></tr>
+      <tr><td>8</td><td>Understand common spoken misspellings such as OBSIDINNA.</td><td class="verified">Verified</td><td>Alias normalization → Obsidian.</td></tr>
+      <tr><td>9</td><td>For Chrome, avoid assuming the active typing window is the target.</td><td class="verified">Verified</td><td>Selects an open Chrome window, then its safe edge.</td></tr>
+      <tr><td>10</td><td>Make avatar mouse dragging reliable.</td><td class="verified">Verified</td><td>Native shaped window + custom pointer drag.</td></tr>
+      <tr><td>11</td><td>Face left while dragged left.</td><td class="done">Implemented</td><td>Directional pointer delta and horizontal sprite flip.</td></tr>
+      <tr><td>12</td><td>Face right while dragged right.</td><td class="verified">Verified</td><td>Real drag moved exactly +196px.</td></tr>
+      <tr><td>13</td><td>Use the walking pose during manual drag.</td><td class="done">Implemented</td><td>Pointer-down motion state.</td></tr>
+      <tr><td>14</td><td>Stay exactly where the user drops him.</td><td class="verified">Verified</td><td>Drop persists bounds and starts a long pin.</td></tr>
+      <tr><td>15</td><td>Restore the manually chosen location after restart.</td><td class="verified">Verified</td><td>Persistent bounds JSON.</td></tr>
+      <tr><td>16</td><td>Jump without relocating the overlay.</td><td class="done">Implemented</td><td>In-footprint jump animation.</td></tr>
+      <tr><td>17</td><td>Swing sword and brace shield in place.</td><td class="verified">Verified</td><td>Sword motion command and live screenshot.</td></tr>
+      <tr><td>18</td><td>Scratch his head / think visibly.</td><td class="done">Implemented</td><td>Thinking pose + scratch cadence.</td></tr>
+      <tr><td>19</td><td>Sit and breathe.</td><td class="done">Implemented</td><td>Seated motion cycle.</td></tr>
+      <tr><td>20</td><td>Perform short left/right patrols inside his own footprint.</td><td class="done">Implemented</td><td>CSS transform only; window stays fixed.</td></tr>
+      <tr><td>21</td><td>Look around without moving the card.</td><td class="done">Implemented</td><td>Alert look motion.</td></tr>
+      <tr><td>22</td><td>Shield against a blocker.</td><td class="done">Implemented</td><td>Blocked/shield animation.</td></tr>
+      <tr><td>23</td><td>Sleep when off duty.</td><td class="done">Implemented</td><td>Off-duty motion.</td></tr>
+      <tr><td>24</td><td>Keep frequent life unpredictable but bounded.</td><td class="done">Implemented</td><td>Random 18–42-second in-place activity.</td></tr>
+      <tr><td>25</td><td>Make transparent window space genuinely click-through.</td><td class="verified">Verified</td><td>Native Windows shape rectangles.</td></tr>
+      <tr><td>26</td><td>Yield covered dropdowns/menus.</td><td class="done">Implemented</td><td>1.2-second avatar hover → fade + click-through.</td></tr>
+      <tr><td>27</td><td>Provide a direct “get out of the way” command.</td><td class="done">Implemented</td><td><code>yield -Duration 30000</code>.</td></tr>
+      <tr><td>28</td><td>Automatically close an abandoned mission picker.</td><td class="verified">Verified</td><td>15-second collapse.</td></tr>
+      <tr><td>29</td><td>Keep the session card clickable while obstruction protection is active.</td><td class="done">Implemented</td><td>Card/panel regions are exempt from ghosting.</td></tr>
+      <tr><td>30</td><td>Route one session with one click.</td><td class="verified">Verified</td><td>Exact Anti-Gravity session URI.</td></tr>
+      <tr><td>31</td><td>Offer a chooser for multiple live sessions.</td><td class="verified">Verified</td><td>Live multi-session panel.</td></tr>
+      <tr><td>32</td><td>Never prompt repeatedly for the Claude URI handler.</td><td class="verified">Verified</td><td>Second-route zero-prompt test.</td></tr>
+      <tr><td>33</td><td>Exclude unrouteable Claude processes.</td><td class="verified">Verified</td><td>Requires a valid <code>--resume</code> UUID.</td></tr>
+      <tr><td>34</td><td>Expose truthful runtime telemetry.</td><td class="done">Implemented</td><td>Idle seconds, pin time, action, error, bounds, sessions.</td></tr>
+      <tr><td>35</td><td>Fail visibly when a named app cannot be found.</td><td class="done">Implemented</td><td>Blocked pose + status error.</td></tr>
+      <tr><td>36</td><td>Validate all twelve character assets at startup.</td><td class="verified">Verified</td><td>Reusable character-pack schema.</td></tr>
+      <tr><td>37</td><td>Prevent two copies of CRIXUS from running.</td><td class="verified">Verified</td><td>Electron single-instance lock.</td></tr>
+      <tr><td>38</td><td>Clamp manual drops to a real monitor work area.</td><td class="verified">Verified</td><td>Six-display geometry tests.</td></tr>
+      <tr><td>39</td><td>Keep the pet above applications without stealing focus.</td><td class="verified">Verified</td><td>Always-on-top + <code>showInactive</code>.</td></tr>
+      <tr><td>40</td><td>Let users disable relocation while keeping personality.</td><td class="done">Implemented</td><td><code>roam off</code> leaves animations active.</td></tr>
+      <tr><td>41</td><td>Add reduced-motion accessibility.</td><td class="next">Next</td><td>Honor Windows animation preference.</td></tr>
+      <tr><td>42</td><td>Remember a preferred anchor per application.</td><td class="next">Next</td><td>Per-app edge map.</td></tr>
+      <tr><td>43</td><td>Support multiple pets without collisions.</td><td class="next">Next</td><td>Shared occupancy grid.</td></tr>
+      <tr><td>44</td><td>Pause animation on battery saver.</td><td class="next">Next</td><td>Electron power monitor.</td></tr>
+      <tr><td>45</td><td>Prioritize urgent/blocked sessions visually.</td><td class="next">Next</td><td>Session state ranking.</td></tr>
+      <tr><td>46</td><td>Add a tray menu for stay-put, summon, and sleep.</td><td class="next">Next</td><td>Windows tray controls.</td></tr>
+      <tr><td>47</td><td>Add a keyboard summon shortcut.</td><td class="next">Next</td><td>Configurable global shortcut.</td></tr>
+      <tr><td>48</td><td>Provide a no-code character-pack wizard.</td><td class="next">Next</td><td>Validate images and write <code>character.json</code>.</td></tr>
+      <tr><td>49</td><td>Provide a signed one-click installer for GitHub users.</td><td class="next">Next</td><td>Release packaging and signing.</td></tr>
+      <tr><td>50</td><td>Recover gracefully after a renderer crash.</td><td class="next">Next</td><td>Crash restart + local diagnostic receipt.</td></tr>
+    </tbody>
+  </table>
+  <div class="law"><strong>Behavior law:</strong> CRIXUS may look alive often. He may move the window rarely. User placement, typing, reading, menus, and mission selection always outrank autonomous behavior.</div>
+</main>
+</body>
+</html>

@@ -14,6 +14,9 @@ Public home: [BarujMackliff/armada-awake-pets](https://github.com/BarujMackliff/
 .\CRIXUS_AVATAR.ps1 route -SessionId <session-id>
 .\CRIXUS_AVATAR.ps1 roam -Mode on
 .\CRIXUS_AVATAR.ps1 roam -Mode off
+.\CRIXUS_AVATAR.ps1 move-to -AppName Obsidian
+.\CRIXUS_AVATAR.ps1 animate -Motion sword
+.\CRIXUS_AVATAR.ps1 yield -Duration 30000
 .\CRIXUS_AVATAR.ps1 pose error-log
 .\CRIXUS_AVATAR.ps1 pose checkpoint
 .\CRIXUS_AVATAR.ps1 pose success
@@ -24,15 +27,22 @@ The two `.cmd` launchers provide one-click enable and disable.
 ## Behavior
 
 - Drag CRIXUS by the avatar across any connected monitor.
-- CRIXUS breathes continuously and walks to a new position every 9–17 seconds without being touched.
-- Roughly one in four autonomous walks can move him to another connected monitor.
-- `roam -Mode off` makes him stay put; `roam -Mode on` resumes autonomous travel.
+- While manually dragged, CRIXUS changes to the walking pose and faces left or right with the pointer.
+- A manual drop pins the exact position for a randomly selected 14, 34, or 44 minutes.
+- CRIXUS frequently comes alive **inside his existing footprint**: breathing, jumping, sword work, scratching his head, sitting, short patrols, looking around, shielding, and sleeping.
+- Smart relocation is rare. It is eligible only after the long pin expires and Windows reports at least 60 seconds without keyboard or mouse input.
+- A smart relocation follows the foreground app's display and selects a screen edge far from the cursor instead of jumping onto the reading or typing area.
+- `move-to -AppName Obsidian` (including the spoken typo `OBSIDINNA`) or `move-to -AppName "Google Chrome"` targets an open app without keylogging. Chrome chooses an open Chrome window rather than assuming the active typing window.
+- Hovering over the avatar for 1.2 seconds makes it fade and become click-through, so covered menus or dropdown choices become readable and clickable. Move the pointer away to restore it.
+- `yield` temporarily gets CRIXUS entirely out of the way.
+- `roam -Mode off` disables window relocation but leaves in-place life animations running; `roam -Mode on` enables the guarded long-cooldown behavior.
 - One session: click the mission card to return to that task.
 - Multiple sessions: click the card or chevron, then choose the exact task.
 - Live session data comes from active `claude.exe --resume=<id>` processes and their local Claude transcript files.
 - Task routing uses Anti-Gravity's registered Claude Code URI handler.
 - The last cross-monitor position is restored on the next launch.
 - The window stays click-through outside CRIXUS and his cards.
+- The multi-session picker closes automatically after 15 seconds so it cannot remain over the workspace.
 
 ## Twelve visual states
 

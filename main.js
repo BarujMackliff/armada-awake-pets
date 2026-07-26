@@ -140,6 +140,9 @@ function writeRuntime() {
       ? Math.max(0, Math.round((config.nextRelocationAt - Date.now()) / 1000))
       : 0,
     systemIdleSeconds: powerMonitor.getSystemIdleTime(),
+    ghosted,
+    pointerRegion,
+    pointerInteractive,
     lastAction,
     lastError,
     updatedAt: new Date().toISOString()
@@ -411,6 +414,7 @@ function applyCommand(command) {
     if (valid.has(command.pose)) {
       clearTimeout(forcedPoseTimer);
       win.showInactive();
+      lastAction = `Pose: ${command.pose}`;
       win.webContents.send("force-pose", {
         name: command.pose,
         duration: Math.max(700, Math.min(Number(command.duration) || 5000, 60_000))
@@ -423,6 +427,7 @@ function applyCommand(command) {
   } else if (command.action === "move-to") {
     moveToNamedApp(command.appName);
   } else if (command.action === "animate") {
+    lastAction = `In-place motion: ${command.motion || "random"}`;
     win.webContents.send("run-motion", {
       name: command.motion || "random",
       duration: Math.max(900, Math.min(Number(command.duration) || 3000, 15_000))
@@ -476,6 +481,10 @@ ipcMain.handle("session:open", (_event, id) => routeToSession(id));
 ipcMain.on("window:interactive", (_event, detail) => {
   pointerInteractive = typeof detail === "object" ? Boolean(detail.interactive) : Boolean(detail);
   pointerRegion = typeof detail === "object" ? String(detail.region || "none") : "unknown";
+  if (pointerRegion !== "avatar") {
+    pointerInsideSince = 0;
+    setGhosted(false);
+  }
 });
 ipcMain.on("window:expanded", (_event, expanded) => {
   if (!win || win.isDestroyed()) return;

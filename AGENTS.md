@@ -17,6 +17,8 @@ For state reactions:
 
 Do not report enablement until `.\CRIXUS_AVATAR.ps1 status` returns both `"running": true` and `"visible": true`.
 
-CRIXUS roams automatically by default. “Stay put” means `.\CRIXUS_AVATAR.ps1 roam -Mode off`; “resume roaming” means `.\CRIXUS_AVATAR.ps1 roam -Mode on`.
+CRIXUS animates in place frequently but relocates only after a 14/34/44-minute pin and at least 60 seconds of system idle time. “Stay put” means `.\CRIXUS_AVATAR.ps1 roam -Mode off`; “resume smart relocation” means `.\CRIXUS_AVATAR.ps1 roam -Mode on`.
+
+When the user addresses CRIXUS and names an open app as a destination, run `.\CRIXUS_AVATAR.ps1 move-to -AppName "<app>"`. `OBSIDINNA` normalizes to Obsidian and Google Chrome normalizes to Chrome. “Get out of the way,” “I need to read,” or “show me the options” means `.\CRIXUS_AVATAR.ps1 yield -Duration 30000`. Requests to jump, swing the sword, scratch his head, sit, patrol, look, shield, or sleep map to `animate -Motion <name>`.
 
 After every verified change inside this repository, run `.\SYNC_TO_GITHUB.ps1`. It must pass tests and the publication safety scan before it can commit or push. Never bypass the scan and never force-push.

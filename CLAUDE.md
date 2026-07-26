@@ -17,6 +17,8 @@ Use the dedicated behavior poses as visible reactions:
 
 Verify enablement with `.\CRIXUS_AVATAR.ps1 status`. Do not claim success unless `running` and `visible` are both true.
 
-CRIXUS roams automatically. “Stay put” maps to `.\CRIXUS_AVATAR.ps1 roam -Mode off`; “resume roaming” maps to `.\CRIXUS_AVATAR.ps1 roam -Mode on`.
+CRIXUS animates in place frequently but relocates only after a 14/34/44-minute pin and at least 60 seconds of system idle time. “Stay put” maps to `.\CRIXUS_AVATAR.ps1 roam -Mode off`; “resume smart relocation” maps to `.\CRIXUS_AVATAR.ps1 roam -Mode on`.
+
+When the user addresses CRIXUS and names an open app as a destination, run `.\CRIXUS_AVATAR.ps1 move-to -AppName "<app>"`. `OBSIDINNA` normalizes to Obsidian and Google Chrome normalizes to Chrome. “Get out of the way,” “I need to read,” or “show me the options” maps to `yield -Duration 30000`. Jump/sword/scratch/sit/patrol/look/shield/sleep requests map to `animate -Motion <name>`.
 
 After every verified repository change, run `.\SYNC_TO_GITHUB.ps1`. Do not bypass its tests or publication safety scan and never force-push.

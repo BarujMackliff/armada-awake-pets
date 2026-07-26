@@ -57,6 +57,8 @@ if ($Action -eq "status") {
       nextRelocationAt = $runtime.nextRelocationAt
       pinnedForSeconds = [int]$runtime.pinnedForSeconds
       systemIdleSeconds = [int]$runtime.systemIdleSeconds
+      ghosted = [bool]$runtime.ghosted
+      pointerRegion = $runtime.pointerRegion
       lastAction = $runtime.lastAction
       lastError = $runtime.lastError
       updatedAt = $runtime.updatedAt
