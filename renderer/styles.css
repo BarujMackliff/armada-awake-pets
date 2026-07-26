@@ -1,0 +1,251 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
+  --ink: #1f2025;
+  --muted: #81828a;
+  --wine: #6f1e2a;
+  --bronze: #9b6a31;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+}
+
+button {
+  font: inherit;
+}
+
+.pet {
+  position: relative;
+  width: 420px;
+  margin: 0 auto;
+  padding-top: 10px;
+}
+
+.avatar-drag {
+  width: 220px;
+  height: 182px;
+  margin: 0 auto -15px;
+  display: grid;
+  place-items: end center;
+  -webkit-app-region: drag;
+  cursor: grab;
+}
+
+.avatar-drag:active {
+  cursor: grabbing;
+}
+
+.avatar-drag img {
+  display: block;
+  width: auto;
+  height: 168px;
+  max-width: 220px;
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 8px rgba(0, 0, 0, 0.24));
+  animation: crixus-breathe 3.4s ease-in-out infinite;
+  transition: opacity 110ms ease, transform 150ms ease;
+}
+
+.avatar-drag img.swap {
+  opacity: 0.25;
+  transform: scale(0.96);
+}
+
+.pet.roaming .avatar-drag img {
+  animation: crixus-walk-bob 360ms ease-in-out infinite alternate;
+}
+
+@keyframes crixus-breathe {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-0.3deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(0.5deg);
+  }
+}
+
+@keyframes crixus-walk-bob {
+  from {
+    transform: translateY(1px) rotate(-1.2deg);
+  }
+  to {
+    transform: translateY(-7px) rotate(1.2deg);
+  }
+}
+
+.chevron {
+  position: absolute;
+  z-index: 4;
+  top: 15px;
+  right: 88px;
+  width: 28px;
+  height: 28px;
+  padding: 0 0 4px;
+  border: 0;
+  border-radius: 50%;
+  color: #17181c;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  font-weight: 900;
+  font-size: 21px;
+  line-height: 24px;
+  cursor: pointer;
+}
+
+.chevron.open {
+  transform: rotate(180deg);
+}
+
+.mission-card {
+  position: relative;
+  z-index: 3;
+  width: 390px;
+  min-height: 64px;
+  margin: 0 auto;
+  padding: 11px 20px 10px 23px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 34px;
+  color: var(--ink);
+  background: rgba(250, 250, 250, 0.94);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.19);
+  backdrop-filter: blur(16px);
+  cursor: pointer;
+  text-align: left;
+}
+
+.mission-card:hover {
+  background: rgba(255, 255, 255, 0.99);
+  transform: translateY(-1px);
+}
+
+.mission-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.mission-copy strong,
+.mission-copy span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mission-copy strong {
+  font-size: 14px;
+  letter-spacing: -0.1px;
+}
+
+.mission-copy span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.session-count {
+  flex: 0 0 auto;
+  min-width: 27px;
+  height: 27px;
+  padding: 4px 8px;
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--wine), #9f3f40);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.session-panel {
+  width: 390px;
+  max-height: 370px;
+  margin: 8px auto 0;
+  padding: 8px;
+  overflow: hidden auto;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 22px;
+  background: rgba(246, 246, 248, 0.96);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(18px);
+}
+
+.session-row {
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 11px;
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  column-gap: 10px;
+  border: 0;
+  border-radius: 14px;
+  color: var(--ink);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.session-row:hover {
+  background: #fff;
+}
+
+.state-dot {
+  width: 9px;
+  height: 9px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: #8b8d95;
+  box-shadow: 0 0 0 3px rgba(139, 141, 149, 0.12);
+}
+
+.state-dot.working {
+  background: #35b875;
+  box-shadow: 0 0 0 3px rgba(53, 184, 117, 0.14);
+}
+
+.state-dot.recent {
+  background: #d69538;
+  box-shadow: 0 0 0 3px rgba(214, 149, 56, 0.14);
+}
+
+.row-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.row-title,
+.row-summary {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.row-title {
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.row-summary {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}

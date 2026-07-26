@@ -1,0 +1,7 @@
+node_modules/
+npm-debug.log*
+*.tmp
+work/
+assets/*-chroma.png
+assets/crixus-sprite-sheet*.png
+.github/workflows/
