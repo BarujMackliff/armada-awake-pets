@@ -1,5 +1,5 @@
 param(
-  [ValidateSet("enable", "disable", "toggle", "quit", "status", "refresh", "pose", "route", "roam", "move-to", "animate", "yield", "size")]
+  [ValidateSet("enable", "disable", "toggle", "quit", "status", "refresh", "pose", "route", "roam", "move-to", "animate", "yield", "size", "startup-enable", "startup-disable", "startup-status")]
   [string]$Action = "enable",
   [ValidateSet("alert", "working", "walking", "thinking", "success", "error-log", "checkpoint", "waiting", "battle-ready", "routing", "blocked", "off-duty")]
   [string]$Pose = "alert",
@@ -19,6 +19,8 @@ $runtimeDir = Join-Path $env:LOCALAPPDATA "PRBE\CrixusAwakePet"
 $runtimePath = Join-Path $runtimeDir "runtime.json"
 $commandPath = Join-Path $runtimeDir "command.json"
 $electron = Join-Path $PSScriptRoot "node_modules\electron\dist\electron.exe"
+$startupDir = [Environment]::GetFolderPath("Startup")
+$startupShortcut = Join-Path $startupDir "Avatar Vanguard - CRIXUS.lnk"
 
 New-Item -ItemType Directory -Path $runtimeDir -Force | Out-Null
 
@@ -43,6 +45,67 @@ function Send-CrixusCommand([string]$Name, [hashtable]$Extra = @{}) {
   $temporary = "$commandPath.tmp"
   $payload | ConvertTo-Json | Set-Content -LiteralPath $temporary -Encoding UTF8
   Move-Item -LiteralPath $temporary -Destination $commandPath -Force
+}
+
+function Get-CrixusStartup {
+  if (-not (Test-Path -LiteralPath $startupShortcut)) { return $null }
+  try {
+    $shell = New-Object -ComObject WScript.Shell
+    return $shell.CreateShortcut($startupShortcut)
+  } catch {
+    return $null
+  }
+}
+
+function Test-CrixusStartup {
+  $shortcut = Get-CrixusStartup
+  if (-not $shortcut) { return $false }
+  $expectedScript = [System.IO.Path]::GetFullPath($PSCommandPath)
+  $expectedDirectory = [System.IO.Path]::GetFullPath($PSScriptRoot)
+  return (
+    [System.IO.Path]::GetFullPath($shortcut.WorkingDirectory) -eq $expectedDirectory -and
+    $shortcut.Arguments -like "*$expectedScript*" -and
+    $shortcut.Arguments -match "(^|\s)enable(\s|$)"
+  )
+}
+
+if ($Action -eq "startup-status") {
+  [pscustomobject]@{
+    enabled = [bool](Test-CrixusStartup)
+    shortcut = $startupShortcut
+    project = $PSScriptRoot
+  } | ConvertTo-Json -Depth 3
+  exit 0
+}
+
+if ($Action -eq "startup-enable") {
+  if (-not (Test-Path -LiteralPath $electron)) {
+    throw "CRIXUS Awake Pet dependencies are not installed. Run npm.cmd install in $PSScriptRoot"
+  }
+  $shell = New-Object -ComObject WScript.Shell
+  $shortcut = $shell.CreateShortcut($startupShortcut)
+  $shortcut.TargetPath = (Get-Command powershell.exe -ErrorAction Stop).Source
+  $shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$PSCommandPath`" enable"
+  $shortcut.WorkingDirectory = $PSScriptRoot
+  $shortcut.IconLocation = "$electron,0"
+  $shortcut.Description = "Launch Avatar Vanguard - CRIXUS at Windows sign-in"
+  $shortcut.Save()
+  if (-not (Test-CrixusStartup)) {
+    throw "Avatar Vanguard startup shortcut was created but failed verification."
+  }
+  "Avatar Vanguard will start with Windows."
+  exit 0
+}
+
+if ($Action -eq "startup-disable") {
+  if (Test-Path -LiteralPath $startupShortcut) {
+    Remove-Item -LiteralPath $startupShortcut -Force
+  }
+  if (Test-Path -LiteralPath $startupShortcut) {
+    throw "Avatar Vanguard startup shortcut could not be removed."
+  }
+  "Avatar Vanguard will not start with Windows."
+  exit 0
 }
 
 if ($Action -eq "status") {

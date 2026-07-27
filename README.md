@@ -43,6 +43,17 @@ Public home: [BarujMackliff/armada-awake-pets](https://github.com/BarujMackliff/
 
 The two `.cmd` launchers provide one-click enable and disable.
 
+To keep the shortcut listener available after restarting Windows:
+
+```powershell
+.\CRIXUS_AVATAR.ps1 startup-enable
+.\CRIXUS_AVATAR.ps1 startup-status
+.\CRIXUS_AVATAR.ps1 startup-disable
+```
+
+`startup-enable` installs a verified per-user sign-in shortcut for the current clone.
+Run it again if the repository is moved to another folder.
+
 ## Behavior
 
 - Drag the avatar across any connected monitor. It walks and faces the drag direction.
