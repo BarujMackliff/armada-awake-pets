@@ -19,6 +19,10 @@ test("global shortcuts always summon, while right-click closes and sizes remain 
   assert.match(main, /\["CommandOrControl\+Shift\+A", handlePrimarySummon\]/);
   assert.match(main, /\["CommandOrControl\+Shift\+B", summonAvatar\]/);
   assert.match(main, /primaryDoublePressWindowMs = 900/);
+  assert.match(main, /AVATAR_VANGUARD_EXTERNAL_HOTKEYS/);
+  assert.match(main, /Ctrl\+Shift\+A \(letter A, persistent sentinel\)/);
+  assert.match(main, /Quit visible avatar \(hotkeys stay armed\)/);
+  assert.match(main, /Summon: Ctrl\+Shift\+A \(letter A, press twice\)/);
   assert.match(main, /repeated shortcut presses keep it visible/);
   assert.match(main, /webContents\.on\("context-menu", showAvatarContextMenu\)/);
   assert.match(main, /Close avatar/);

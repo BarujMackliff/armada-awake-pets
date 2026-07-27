@@ -31,6 +31,14 @@ test("installation provides hotkeys, Desktop icon, and a machine-level agent com
   assert.match(launcher, /Avatar Vanguard - CRIXUS\.lnk/);
   assert.match(launcher, /PRBE\\AvatarVanguard/);
   assert.match(launcher, /AvatarVanguard\.ps1/);
+  assert.match(launcher, /HotkeySentinel\.ps1/);
+  assert.match(launcher, /RegisterHotKey/);
+  assert.match(launcher, /GetMessage/);
+  assert.match(launcher, /0x41/);
+  assert.match(launcher, /0x42/);
+  assert.match(launcher, /letter A, double press within 900 ms/);
+  assert.match(launcher, /persistent hotkeys remain armed/);
+  assert.match(launcher, /AVATAR_VANGUARD_EXTERNAL_HOTKEYS/);
   assert.match(launcher, /assets\\crixus\.ico/);
   assert.match(launcher, /-WindowStyle Hidden/);
   assert.match(launcher, /\$shortcut\.WorkingDirectory = \$PSScriptRoot/);
@@ -38,4 +46,6 @@ test("installation provides hotkeys, Desktop icon, and a machine-level agent com
   assert.match(launcher, /Test-CrixusShortcut/);
   assert.match(readme, /Desktop launcher with the CRIXUS icon/);
   assert.match(readme, /Any local agent can show the installed avatar/);
+  assert.match(readme, /letter A, not the number 8/);
+  assert.match(readme, /hotkey sentinel remains armed and can cold-restart it/);
 });

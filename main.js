@@ -66,6 +66,9 @@ let rendererRecoveryTimes = [];
 const registeredShortcuts = [];
 let primaryShortcutPressedAt = 0;
 const primaryDoublePressWindowMs = 900;
+const externalWindowsHotkeySentinel =
+  process.platform === "win32" &&
+  process.env.AVATAR_VANGUARD_EXTERNAL_HOTKEYS === "1";
 
 const defaultConfig = {
   roamEnabled: true,
@@ -271,6 +274,15 @@ function showAvatarContextMenu() {
   const activeSize = normalizeSize(config.size).name;
   const menu = Menu.buildFromTemplate([
     {
+      label: "Summon: Ctrl+Shift+A (letter A, press twice)",
+      enabled: false
+    },
+    {
+      label: "Fallback: Ctrl+Shift+B (press once)",
+      enabled: false
+    },
+    { type: "separator" },
+    {
       label: "Avatar size",
       submenu: ["small", "medium", "large"].map((name) => ({
         label: name[0].toUpperCase() + name.slice(1),
@@ -291,7 +303,7 @@ function showAvatarContextMenu() {
       click: closeAvatar
     },
     {
-      label: "Quit Awake Pet",
+      label: "Quit visible avatar (hotkeys stay armed)",
       click: () => app.quit()
     }
   ]);
@@ -299,6 +311,14 @@ function showAvatarContextMenu() {
 }
 
 function registerAvatarShortcuts() {
+  if (externalWindowsHotkeySentinel) {
+    registeredShortcuts.push(
+      "Ctrl+Shift+A (letter A, persistent sentinel)",
+      "Ctrl+Shift+B (persistent sentinel)"
+    );
+    lastAction = "Persistent Windows hotkey sentinel armed";
+    return;
+  }
   const shortcuts = [
     ["CommandOrControl+Shift+A", handlePrimarySummon],
     ["CommandOrControl+Shift+B", summonAvatar]

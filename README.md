@@ -14,13 +14,14 @@ Public home: [BarujMackliff/armada-awake-pets](https://github.com/BarujMackliff/
   - a stable machine-level agent command at
     `%LOCALAPPDATA%\PRBE\AvatarVanguard\AvatarVanguard.ps1`.
 - Double-click **Avatar Vanguard - CRIXUS** on the Desktop to show him.
-- Windows: double-press `Ctrl+Shift+A` to summon the avatar.
+- Windows: double-press `Ctrl+Shift+A`—the **letter A, not the number 8**—to
+  summon the avatar.
 - macOS: double-press `Command+Shift+A` to summon the avatar.
 - Fallback: `Ctrl+Shift+B` or `Command+Shift+B`—B for Baruch—summons immediately.
 - The global shortcuts never close the avatar.
 - Right-click the avatar for Small, Medium, Large, Smart relocation, Close, and Quit.
-- **Close avatar** hides the window but keeps the shortcuts armed; **Quit Awake Pet**
-  exits the background process.
+- **Close avatar** hides the window. **Quit visible avatar** exits Electron while
+  the separate Windows hotkey sentinel remains armed and can cold-restart it.
 - Large is the original and maximum 440 by 300 size. Medium is 370 by 252. Small is
   299 by 204.
 - The original character artwork, including its eyes, is displayed unchanged. There
