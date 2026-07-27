@@ -8,6 +8,12 @@ Public home: [BarujMackliff/armada-awake-pets](https://github.com/BarujMackliff/
 
 ## Everyday controls
 
+- Run `.\CRIXUS_AVATAR.ps1 install` once after `npm.cmd install`. This creates:
+  - a **Desktop launcher with the CRIXUS icon**,
+  - a Windows sign-in launcher that keeps the hotkeys armed, and
+  - a stable machine-level agent command at
+    `%LOCALAPPDATA%\PRBE\AvatarVanguard\AvatarVanguard.ps1`.
+- Double-click **Avatar Vanguard - CRIXUS** on the Desktop to show him.
 - Windows: double-press `Ctrl+Shift+A` to summon the avatar.
 - macOS: double-press `Command+Shift+A` to summon the avatar.
 - Fallback: `Ctrl+Shift+B` or `Command+Shift+B`—B for Baruch—summons immediately.
@@ -24,6 +30,11 @@ Public home: [BarujMackliff/armada-awake-pets](https://github.com/BarujMackliff/
 ## Commands
 
 ```powershell
+.\CRIXUS_AVATAR.ps1 install
+.\CRIXUS_AVATAR.ps1 install-status
+.\CRIXUS_AVATAR.ps1 uninstall
+.\CRIXUS_AVATAR.ps1 show
+.\CRIXUS_AVATAR.ps1 hide
 .\CRIXUS_AVATAR.ps1 enable
 .\CRIXUS_AVATAR.ps1 disable
 .\CRIXUS_AVATAR.ps1 toggle
@@ -41,18 +52,16 @@ Public home: [BarujMackliff/armada-awake-pets](https://github.com/BarujMackliff/
 .\CRIXUS_AVATAR.ps1 pose success
 ```
 
-The two `.cmd` launchers provide one-click enable and disable.
+The two legacy `.cmd` launchers still provide one-click enable and disable.
+The individual `startup-enable|status|disable` and
+`desktop-enable|status|disable` actions remain available for repair and support.
+Run `install` again if the repository is moved to another folder.
 
-To keep the shortcut listener available after restarting Windows:
+Any local agent can show the installed avatar from any working directory with:
 
 ```powershell
-.\CRIXUS_AVATAR.ps1 startup-enable
-.\CRIXUS_AVATAR.ps1 startup-status
-.\CRIXUS_AVATAR.ps1 startup-disable
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\PRBE\AvatarVanguard\AvatarVanguard.ps1" show
 ```
-
-`startup-enable` installs a verified per-user sign-in shortcut for the current clone.
-Run it again if the repository is moved to another folder.
 
 ## Behavior
 

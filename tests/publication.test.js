@@ -74,6 +74,19 @@ test("publication boundary blocks pointer warping and disguised binary files", (
   }
 });
 
+test("publication boundary accepts a structurally valid Windows icon", () => {
+  const cwd = fixture();
+  try {
+    fs.mkdirSync(path.join(cwd, "assets"));
+    const iconHeader = Buffer.from([0, 0, 1, 0, 1, 0]);
+    fs.writeFileSync(path.join(cwd, "assets", "crixus.ico"), iconHeader);
+    const result = runScanner(cwd);
+    assert.equal(result.status, 0, result.stderr);
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
 test("publication boundary scans image metadata and removed files in Git history", () => {
   const cwd = fixture();
   try {

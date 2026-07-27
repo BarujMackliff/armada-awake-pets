@@ -1,12 +1,14 @@
 # CRIXUS Awake Pet harness contract
 
-When a user says “CRIXUS, enable your avatar,” “put your avatar up,” or “show your avatar,” run:
+When a user says “CRIXUS, enable your avatar,” “put your avatar up,” or “show your avatar,” run the installed machine-level launcher from any working directory:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\CRIXUS_AVATAR.ps1" enable
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\PRBE\AvatarVanguard\AvatarVanguard.ps1" show
 ```
 
-For “disable/hide your avatar,” use `disable`.
+For “disable/hide your avatar,” use `hide`. If the machine-level launcher is absent,
+run `.\CRIXUS_AVATAR.ps1 install` once from this repository; that installation must
+also create the CRIXUS-icon Desktop launcher and the Windows sign-in shortcut.
 
 For state reactions:
 
@@ -15,7 +17,8 @@ For state reactions:
 - verified completion → `pose -Pose success -Duration 6000`
 - real blocker → `pose -Pose blocked -Duration 8000`
 
-Do not report enablement until `.\CRIXUS_AVATAR.ps1 status` returns both `"running": true` and `"visible": true`.
+Do not report enablement until the installed launcher with `status` returns both
+`"running": true` and `"visible": true`.
 
 CRIXUS animates in place frequently but relocates only after a 14/34/44-minute pin and at least 60 seconds of system idle time. “Stay put” means `.\CRIXUS_AVATAR.ps1 roam -Mode off`; “resume smart relocation” means `.\CRIXUS_AVATAR.ps1 roam -Mode on`.
 

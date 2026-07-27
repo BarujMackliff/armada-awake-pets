@@ -1,5 +1,5 @@
 param(
-  [ValidateSet("enable", "disable", "toggle", "quit", "status", "refresh", "pose", "route", "roam", "move-to", "animate", "yield", "size", "startup-enable", "startup-disable", "startup-status")]
+  [ValidateSet("enable", "show", "disable", "hide", "toggle", "quit", "status", "refresh", "pose", "route", "roam", "move-to", "animate", "yield", "size", "install", "uninstall", "install-status", "startup-enable", "startup-disable", "startup-status", "desktop-enable", "desktop-disable", "desktop-status")]
   [string]$Action = "enable",
   [ValidateSet("alert", "working", "walking", "thinking", "success", "error-log", "checkpoint", "waiting", "battle-ready", "routing", "blocked", "off-duty")]
   [string]$Pose = "alert",
@@ -19,8 +19,13 @@ $runtimeDir = Join-Path $env:LOCALAPPDATA "PRBE\CrixusAwakePet"
 $runtimePath = Join-Path $runtimeDir "runtime.json"
 $commandPath = Join-Path $runtimeDir "command.json"
 $electron = Join-Path $PSScriptRoot "node_modules\electron\dist\electron.exe"
+$iconPath = Join-Path $PSScriptRoot "assets\crixus.ico"
+$installDir = Join-Path $env:LOCALAPPDATA "PRBE\AvatarVanguard"
+$agentLauncher = Join-Path $installDir "AvatarVanguard.ps1"
 $startupDir = [Environment]::GetFolderPath("Startup")
 $startupShortcut = Join-Path $startupDir "Avatar Vanguard - CRIXUS.lnk"
+$desktopDir = [Environment]::GetFolderPath("Desktop")
+$desktopShortcut = Join-Path $desktopDir "Avatar Vanguard - CRIXUS.lnk"
 
 New-Item -ItemType Directory -Path $runtimeDir -Force | Out-Null
 
@@ -47,64 +52,175 @@ function Send-CrixusCommand([string]$Name, [hashtable]$Extra = @{}) {
   Move-Item -LiteralPath $temporary -Destination $commandPath -Force
 }
 
-function Get-CrixusStartup {
-  if (-not (Test-Path -LiteralPath $startupShortcut)) { return $null }
+function Assert-CrixusDependencies {
+  if (-not (Test-Path -LiteralPath $electron)) {
+    throw "Avatar Vanguard dependencies are not installed. Run npm.cmd install in $PSScriptRoot"
+  }
+  if (-not (Test-Path -LiteralPath $iconPath)) {
+    throw "Avatar Vanguard icon is missing: $iconPath"
+  }
+}
+
+function Install-CrixusAgentLauncher {
+  Assert-CrixusDependencies
+  New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+  $escapedSource = $PSCommandPath.Replace("'", "''")
+  $content = @"
+`$source = '$escapedSource'
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File `$source @args
+exit `$LASTEXITCODE
+"@
+  [System.IO.File]::WriteAllText(
+    $agentLauncher,
+    $content,
+    [System.Text.UTF8Encoding]::new($false)
+  )
+}
+
+function Test-CrixusAgentLauncher {
+  if (-not (Test-Path -LiteralPath $agentLauncher)) { return $false }
+  try {
+    $content = Get-Content -LiteralPath $agentLauncher -Raw
+    return $content.Contains($PSCommandPath)
+  } catch {
+    return $false
+  }
+}
+
+function Get-CrixusShortcut([string]$Path) {
+  if (-not (Test-Path -LiteralPath $Path)) { return $null }
   try {
     $shell = New-Object -ComObject WScript.Shell
-    return $shell.CreateShortcut($startupShortcut)
+    return $shell.CreateShortcut($Path)
   } catch {
     return $null
   }
 }
 
-function Test-CrixusStartup {
-  $shortcut = Get-CrixusStartup
+function Test-CrixusShortcut([string]$Path, [string]$ExpectedAction) {
+  $shortcut = Get-CrixusShortcut $Path
   if (-not $shortcut) { return $false }
-  $expectedScript = [System.IO.Path]::GetFullPath($PSCommandPath)
-  $expectedDirectory = [System.IO.Path]::GetFullPath($PSScriptRoot)
-  return (
-    [System.IO.Path]::GetFullPath($shortcut.WorkingDirectory) -eq $expectedDirectory -and
-    $shortcut.Arguments -like "*$expectedScript*" -and
-    $shortcut.Arguments -match "(^|\s)enable(\s|$)"
-  )
+  try {
+    $expectedDirectory = [System.IO.Path]::GetFullPath($PSScriptRoot)
+    return (
+      [System.IO.Path]::GetFullPath($shortcut.WorkingDirectory) -eq $expectedDirectory -and
+      $shortcut.Arguments -like "*$agentLauncher*" -and
+      $shortcut.Arguments -match "(^|\s)$ExpectedAction(\s|$)" -and
+      $shortcut.IconLocation -like "$iconPath,*"
+    )
+  } catch {
+    return $false
+  }
 }
 
-if ($Action -eq "startup-status") {
-  [pscustomobject]@{
-    enabled = [bool](Test-CrixusStartup)
-    shortcut = $startupShortcut
+function Install-CrixusShortcut([string]$Path, [string]$ActionName, [string]$Description) {
+  Assert-CrixusDependencies
+  Install-CrixusAgentLauncher
+  $shell = New-Object -ComObject WScript.Shell
+  $shortcut = $shell.CreateShortcut($Path)
+  $shortcut.TargetPath = (Get-Command powershell.exe -ErrorAction Stop).Source
+  $shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$agentLauncher`" $ActionName"
+  $shortcut.WorkingDirectory = $PSScriptRoot
+  $shortcut.IconLocation = "$iconPath,0"
+  $shortcut.Description = $Description
+  $shortcut.Save()
+  if (-not (Test-CrixusShortcut $Path $ActionName)) {
+    throw "Avatar Vanguard shortcut was created but failed verification: $Path"
+  }
+}
+
+function Remove-CrixusShortcut([string]$Path) {
+  if (Test-Path -LiteralPath $Path) {
+    Remove-Item -LiteralPath $Path -Force
+  }
+  if (Test-Path -LiteralPath $Path) {
+    throw "Avatar Vanguard shortcut could not be removed: $Path"
+  }
+}
+
+if ($Action -eq "show") { $Action = "enable" }
+if ($Action -eq "hide") { $Action = "disable" }
+
+if ($Action -in @("install-status", "startup-status", "desktop-status")) {
+  $status = [pscustomobject]@{
+    installed = [bool](
+      (Test-CrixusAgentLauncher) -and
+      (Test-CrixusShortcut $startupShortcut "show") -and
+      (Test-CrixusShortcut $desktopShortcut "show")
+    )
+    agentLauncher = [pscustomobject]@{
+      enabled = [bool](Test-CrixusAgentLauncher)
+      path = $agentLauncher
+    }
+    startup = [pscustomobject]@{
+      enabled = [bool](Test-CrixusShortcut $startupShortcut "show")
+      shortcut = $startupShortcut
+    }
+    desktop = [pscustomobject]@{
+      enabled = [bool](Test-CrixusShortcut $desktopShortcut "show")
+      shortcut = $desktopShortcut
+      icon = $iconPath
+    }
     project = $PSScriptRoot
-  } | ConvertTo-Json -Depth 3
+  }
+  if ($Action -eq "startup-status") {
+    $status.startup | ConvertTo-Json -Depth 3
+  } elseif ($Action -eq "desktop-status") {
+    $status.desktop | ConvertTo-Json -Depth 3
+  } else {
+    $status | ConvertTo-Json -Depth 5
+  }
   exit 0
 }
 
 if ($Action -eq "startup-enable") {
-  if (-not (Test-Path -LiteralPath $electron)) {
-    throw "CRIXUS Awake Pet dependencies are not installed. Run npm.cmd install in $PSScriptRoot"
-  }
-  $shell = New-Object -ComObject WScript.Shell
-  $shortcut = $shell.CreateShortcut($startupShortcut)
-  $shortcut.TargetPath = (Get-Command powershell.exe -ErrorAction Stop).Source
-  $shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$PSCommandPath`" enable"
-  $shortcut.WorkingDirectory = $PSScriptRoot
-  $shortcut.IconLocation = "$electron,0"
-  $shortcut.Description = "Launch Avatar Vanguard - CRIXUS at Windows sign-in"
-  $shortcut.Save()
-  if (-not (Test-CrixusStartup)) {
-    throw "Avatar Vanguard startup shortcut was created but failed verification."
-  }
+  Install-CrixusShortcut $startupShortcut "show" "Launch Avatar Vanguard - CRIXUS at Windows sign-in"
   "Avatar Vanguard will start with Windows."
   exit 0
 }
 
+if ($Action -eq "desktop-enable") {
+  Install-CrixusShortcut $desktopShortcut "show" "Show Avatar Vanguard - CRIXUS"
+  "Avatar Vanguard desktop launcher installed."
+  exit 0
+}
+
 if ($Action -eq "startup-disable") {
-  if (Test-Path -LiteralPath $startupShortcut) {
-    Remove-Item -LiteralPath $startupShortcut -Force
-  }
-  if (Test-Path -LiteralPath $startupShortcut) {
-    throw "Avatar Vanguard startup shortcut could not be removed."
-  }
+  Remove-CrixusShortcut $startupShortcut
   "Avatar Vanguard will not start with Windows."
+  exit 0
+}
+
+if ($Action -eq "desktop-disable") {
+  Remove-CrixusShortcut $desktopShortcut
+  "Avatar Vanguard desktop launcher removed."
+  exit 0
+}
+
+if ($Action -eq "install") {
+  Install-CrixusShortcut $startupShortcut "show" "Launch Avatar Vanguard - CRIXUS at Windows sign-in"
+  Install-CrixusShortcut $desktopShortcut "show" "Show Avatar Vanguard - CRIXUS"
+  $Action = "enable"
+}
+
+if ($Action -eq "uninstall") {
+  Remove-CrixusShortcut $startupShortcut
+  Remove-CrixusShortcut $desktopShortcut
+  if (Test-Path -LiteralPath $agentLauncher) {
+    Remove-Item -LiteralPath $agentLauncher -Force
+  }
+  if (Test-CrixusAgentLauncher) {
+    throw "Avatar Vanguard machine-level agent launcher could not be removed."
+  }
+  "Avatar Vanguard launchers removed. The application files and current process were left intact."
+  exit 0
+}
+
+if ($Action -eq "install-status") {
+  [pscustomobject]@{
+    enabled = [bool](Test-CrixusAgentLauncher)
+    launcher = $agentLauncher
+  } | ConvertTo-Json -Depth 3
   exit 0
 }
 
@@ -137,9 +253,7 @@ if ($Action -eq "status") {
 }
 
 if ($Action -eq "enable" -and -not (Test-CrixusRunning)) {
-  if (-not (Test-Path -LiteralPath $electron)) {
-    throw "CRIXUS Awake Pet dependencies are not installed. Run npm.cmd install in $PSScriptRoot"
-  }
+  Assert-CrixusDependencies
   Start-Process -FilePath $electron -ArgumentList "." -WorkingDirectory $PSScriptRoot -WindowStyle Hidden
   $deadline = (Get-Date).AddSeconds(15)
   do {

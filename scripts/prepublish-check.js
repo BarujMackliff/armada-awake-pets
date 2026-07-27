@@ -53,6 +53,7 @@ const allowedExtensions = new Set([
   ".cmd",
   ".css",
   ".html",
+  ".ico",
   ".js",
   ".json",
   ".jpg",
@@ -65,7 +66,7 @@ const allowedExtensions = new Set([
   ".yml",
   ".yaml"
 ]);
-const imageExtensions = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+const imageExtensions = new Set([".ico", ".jpg", ".jpeg", ".png", ".webp"]);
 const textExtensions = new Set([
   "",
   ".cmd",
@@ -208,6 +209,12 @@ function pathFinding(relative) {
 }
 
 function validImageMagic(extension, buffer) {
+  if (extension === ".ico") {
+    return buffer.length >= 6 &&
+      buffer[0] === 0 && buffer[1] === 0 &&
+      buffer[2] === 1 && buffer[3] === 0 &&
+      buffer.readUInt16LE(4) >= 1;
+  }
   if (extension === ".png") {
     return buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
   }
