@@ -24,7 +24,13 @@ CRIXUS animates in place frequently but relocates only after a 14/34/44-minute p
 
 When the user addresses CRIXUS and names an open app as a destination, run `.\CRIXUS_AVATAR.ps1 move-to -AppName "<app>"`. `OBSIDINNA` normalizes to Obsidian and Google Chrome normalizes to Chrome. “Get out of the way,” “I need to read,” or “show me the options” means `.\CRIXUS_AVATAR.ps1 yield -Duration 30000`. Requests to jump, swing the sword, scratch his head, sit, patrol, look, shield, or sleep map to `animate -Motion <name>`.
 
-Double-press `Ctrl/Command+Shift+A` within 900ms to summon the avatar globally; `Ctrl/Command+Shift+B` (B for Baruch) is the immediate fallback. Neither shortcut may close the avatar. Right-click exposes Small, Medium, Large, Close, and Quit. "Close" hides the avatar while leaving global shortcuts armed. Size requests map to `size -Size small|medium|large`; the original 440x300 footprint is Large and is the maximum.
+Double-press `Ctrl/Command+Shift+A`—the **letter A, never the number 8**—within
+900ms to summon the avatar globally; `Ctrl/Command+Shift+B` (B for Baruch) is the
+immediate fallback. On Windows, a separate persistent sentinel owns these hotkeys
+and must remain armed even when the visible Electron avatar quits. Neither shortcut
+may close the avatar. Right-click exposes Small, Medium, Large, Close, and
+**Quit visible avatar (hotkeys stay armed)**. Size requests map to
+`size -Size small|medium|large`; the original 440x300 footprint is Large and is the maximum.
 
 Do not add synthetic moving eyes or pupil overlays. Preserve the original character artwork. The application must never synthesize, warp, click, or otherwise move the user's pointer.
 
