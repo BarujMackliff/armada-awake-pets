@@ -240,11 +240,41 @@ function closeAvatar() {
   }, 500);
 }
 
+function summonBoundsNearPointer() {
+  const current = win.getBounds();
+  const cursor = screen.getCursorScreenPoint();
+  const targetDisplay = screen.getDisplayNearestPoint(cursor);
+  const currentDisplay = screen.getDisplayMatching(current);
+  if (win.isVisible() && currentDisplay.id === targetDisplay.id) {
+    return null;
+  }
+  const workArea = targetDisplay.workArea;
+  const margin = scalePixels(30, config?.size);
+  const cursorOnRight = cursor.x >= workArea.x + workArea.width / 2;
+  return clampBounds(
+    {
+      ...current,
+      x: cursorOnRight
+        ? workArea.x + margin
+        : workArea.x + workArea.width - current.width - margin,
+      y: workArea.y + workArea.height - current.height - margin
+    },
+    displaySnapshot()
+  );
+}
+
 function summonAvatar() {
   if (!win || win.isDestroyed()) return;
+  const target = summonBoundsNearPointer();
+  if (target) {
+    suppressMoveEventsUntil = Date.now() + 600;
+    win.setBounds(target, false);
+  }
   win.showInactive();
   win.setAlwaysOnTop(true, "floating");
-  lastAction = "Avatar summoned; repeated shortcut presses keep it visible";
+  const display = screen.getDisplayMatching(win.getBounds());
+  lastAction = `Avatar summoned on pointer display ${display.id}`;
+  saveBounds();
   writeRuntime();
 }
 

@@ -23,7 +23,10 @@ test("global shortcuts always summon, while right-click closes and sizes remain 
   assert.match(main, /Ctrl\+Shift\+A \(letter A, persistent sentinel\)/);
   assert.match(main, /Quit visible avatar \(hotkeys stay armed\)/);
   assert.match(main, /Summon: Ctrl\+Shift\+A \(letter A, press twice\)/);
-  assert.match(main, /repeated shortcut presses keep it visible/);
+  assert.match(main, /function summonBoundsNearPointer\(\)/);
+  assert.match(main, /screen\.getCursorScreenPoint\(\)/);
+  assert.match(main, /screen\.getDisplayNearestPoint\(cursor\)/);
+  assert.match(main, /Avatar summoned on pointer display/);
   assert.match(main, /webContents\.on\("context-menu", showAvatarContextMenu\)/);
   assert.match(main, /Close avatar/);
   assert.match(main, /click: closeAvatar/);
