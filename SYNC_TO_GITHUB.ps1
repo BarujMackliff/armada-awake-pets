@@ -76,23 +76,29 @@ try {
   }
 
   & git diff --cached --quiet
-  if ($LASTEXITCODE -eq 0) {
-    "GitHub already matches the sealed, verified avatar project."
-    exit 0
+  $hasStagedChanges = $LASTEXITCODE -ne 0
+  if ($hasStagedChanges) {
+    if (-not $Message) {
+      $stamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+      $Message = "verified: Awake Pet final polish $stamp"
+    }
+    & git commit -m $Message
+    if ($LASTEXITCODE -ne 0) { throw "Git commit failed." }
+  } else {
+    "No uncommitted files; verifying local main against GitHub."
   }
-
-  if (-not $Message) {
-    $stamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $Message = "verified: Awake Pet final polish $stamp"
-  }
-  & git commit -m $Message
-  if ($LASTEXITCODE -ne 0) { throw "Git commit failed." }
 
   & node $scanner --root $repo --history
   if ($LASTEXITCODE -ne 0) { throw "Post-commit history scan failed; GitHub push blocked." }
 
   & git fetch origin main
   if ($LASTEXITCODE -ne 0) { throw "Could not verify the remote main branch." }
+  $localHead = (& git rev-parse HEAD).Trim()
+  $remoteHead = (& git rev-parse origin/main).Trim()
+  if ($localHead -eq $remoteHead) {
+    "GitHub already matches the sealed, verified avatar project at $localHead."
+    exit 0
+  }
   & git merge-base --is-ancestor origin/main HEAD
   if ($LASTEXITCODE -ne 0) {
     throw "Remote main is not an ancestor of this commit; non-fast-forward publication is forbidden."

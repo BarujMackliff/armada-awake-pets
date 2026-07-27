@@ -9,6 +9,7 @@ const { execFileSync, spawnSync } = require("node:child_process");
 
 const root = path.resolve(__dirname, "..");
 const scanner = path.join(root, "scripts", "prepublish-check.js");
+const publisher = fs.readFileSync(path.join(root, "SYNC_TO_GITHUB.ps1"), "utf8");
 
 function git(cwd, args) {
   return execFileSync("git", args, { cwd, encoding: "utf8" });
@@ -37,6 +38,16 @@ test("publication boundary accepts only an approved project file", () => {
   } finally {
     fs.rmSync(cwd, { recursive: true, force: true });
   }
+});
+
+test("sealed publisher compares local and remote commits before claiming synchronization", () => {
+  assert.match(publisher, /\$localHead = \(& git rev-parse HEAD\)\.Trim\(\)/);
+  assert.match(publisher, /\$remoteHead = \(& git rev-parse origin\/main\)\.Trim\(\)/);
+  assert.match(publisher, /if \(\$localHead -eq \$remoteHead\)/);
+  assert.doesNotMatch(
+    publisher,
+    /git diff --cached --quiet[\s\S]{0,160}GitHub already matches/
+  );
 });
 
 test("publication boundary blocks credential files and protected-record paths", () => {
